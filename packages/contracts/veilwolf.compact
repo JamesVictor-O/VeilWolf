@@ -1,0 +1,136 @@
+// veilwolf.compact
+//
+// TARGET SHAPE — not compiled, not wired to anything yet.
+//
+// This file sketches what the real VeilWolf contract should look like once
+// we move off `packages/game-engine/src/mockChainClient.ts` and onto the
+// real Midnight Compact TS SDK. It exists so the mock's data shapes
+// (GameState, PrivateState, NightAction in packages/game-engine/src/types.ts)
+// were designed against a plausible real contract instead of drifting from
+// what Compact can actually express. Treat everything below as illustrative
+// pseudocode to be validated against the current Compact language version
+// during the Week-1 spikes described in the root README, not as
+// compiler-checked source.
+//
+// Design intent:
+//   - `ledger` fields are the PUBLIC state — same shape as GameState in
+//     packages/game-engine/src/types.ts. No role, no vote target, no night
+//     action target ever lives here in the clear.
+//   - Role assignment, night action targets, and investigation results are
+//     WITNESSES — private inputs supplied by each player's own wallet /
+//     local state, proven-but-not-revealed via circuits. This is exactly
+//     the split types.ts already makes between GameState and PrivateState.
+//   - Circuit names intentionally match the stateMachine.ts function names
+//     1:1, so the state-machine's pure logic is the spec the circuits need
+//     to reproduce in zero-knowledge.
+
+pragma language_version >= 0.13;
+
+import CompactStandardLibrary;
+
+// ---------------------------------------------------------------------------
+// Public ledger state — mirrors GameState in packages/game-engine/src/types.ts
+// ---------------------------------------------------------------------------
+
+export enum GamePhase { Setup, Night, Dawn, Day, Vote, Ended }
+export enum Winner { None, Werewolves, Villagers }
+
+export struct PublicPlayer {
+  addr: Bytes<32>;
+  isAlive: Boolean;
+  hasActedThisNight: Boolean;
+  hasVotedThisRound: Boolean;
+}
+
+export ledger gameId: Bytes<32>;
+export ledger host: Bytes<32>;
+export ledger phase: GamePhase;
+export ledger turnNumber: Counter;
+export ledger players: List<PublicPlayer>;
+export ledger aliveCount: Counter;
+export ledger winner: Winner;
+export ledger lastEliminated: Maybe<Bytes<32>>;
+
+// Commitments only — never the plaintext target. Each alive player who is
+// eligible to act at night submits one commitment per turn; resolveDawn
+// verifies + tallies via ZK without the contract ever learning who
+// targeted whom, beyond the outcome (who died / who was saved).
+export ledger nightActionCommitments: Map<Bytes<32>, Bytes<32>>;
+export ledger voteCommitments: Map<Bytes<32>, Bytes<32>>;
+
+// ---------------------------------------------------------------------------
+// Private witnesses — mirrors PrivateState in packages/game-engine/src/types.ts
+// ---------------------------------------------------------------------------
+
+// Supplied locally by each player's wallet, never submitted to the ledger
+// in the clear. `roleProofKey` in PrivateState is the mock stand-in for
+// whatever commitment/nullifier scheme proves "I was dealt role X in game
+// gameId" without revealing X to anyone but the prover, until reveal-time
+// (e.g. the elimination screen) discloses only that one player's role.
+witness role(gameId: Bytes<32>, player: Bytes<32>): Uint<8>;
+witness nightActionTarget(gameId: Bytes<32>, turn: Uint<32>): Bytes<32>;
+witness voteTarget(gameId: Bytes<32>, turn: Uint<32>): Bytes<32>;
+
+// ---------------------------------------------------------------------------
+// Circuits — one per stateMachine.ts function of the same name
+// ---------------------------------------------------------------------------
+
+export circuit createGame(newGameId: Bytes<32>, hostAddr: Bytes<32>): [] {
+  // Initializes ledger state: phase = Setup, turnNumber = 0,
+  // players = [hostAddr], aliveCount = 1, winner = None.
+}
+
+export circuit joinGame(playerAddr: Bytes<32>): [] {
+  // Requires phase == Setup and players.length < 9.
+  // Appends playerAddr to players, increments aliveCount.
+}
+
+export circuit startGame(): [] {
+  // Requires phase == Setup, players.length == 9, caller == host.
+  // Role assignment happens OFF the public ledger: each player locally
+  // derives/receives their `role` witness (e.g. via a shuffled-and-sealed
+  // commitment scheme run once at game start) and proves membership in the
+  // fixed 2 WEREWOLF / 5 VILLAGER / 1 DOCTOR / 1 SEER composition without
+  // revealing the assignment itself. phase -> Night, turnNumber -> 1.
+}
+
+export circuit submitNightAction(commitment: Bytes<32>): [] {
+  // Requires phase == Night, caller alive, caller has not yet acted this
+  // turn, and a ZK proof that `role(gameId, caller)` is one of
+  // {WEREWOLF, DOCTOR, SEER} (villagers have nothing to submit) and that
+  // `commitment` correctly commits to `nightActionTarget(gameId, turn)`.
+  // Records commitment in nightActionCommitments, sets hasActedThisNight.
+}
+
+export circuit resolveDawn(): [] {
+  // Requires phase == Night and all eligible commitments present.
+  // Tallies werewolf-target commitments (majority target dies unless it
+  // matches the doctor's heal commitment) via ZK equality checks on the
+  // committed values, without ever exposing an individual player's target.
+  // Applies isAlive updates, checks victory, phase -> Dawn (or Ended).
+}
+
+export circuit advanceToDay(): [] {
+  // Requires phase == Dawn. phase -> Day.
+}
+
+export circuit advanceToVote(): [] {
+  // Requires phase == Day. phase -> Vote, clears hasVotedThisRound.
+}
+
+export circuit submitVote(commitment: Bytes<32>): [] {
+  // Requires phase == Vote, caller alive, caller has not yet voted.
+  // Records commitment in voteCommitments, sets hasVotedThisRound.
+}
+
+export circuit revealVotes(): [] {
+  // Requires phase == Vote and all eligible votes present.
+  // Tallies commitments; a strict-plurality target is eliminated (ties ->
+  // no elimination). Checks victory. phase -> Night (turnNumber += 1) or
+  // Ended.
+}
+
+// checkVictory is intentionally not a separate circuit: resolveDawn and
+// revealVotes both need to evaluate it as part of the same transaction
+// that changed aliveCount, exactly like stateMachine.ts calls it inline
+// rather than as a separate client round-trip.
