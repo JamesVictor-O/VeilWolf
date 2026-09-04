@@ -34,11 +34,11 @@ export function PhaseTimer({ endsAt, label, onExpire, className = "" }: PhaseTim
   return (
     <div className={`flex flex-col items-center gap-1 ${className}`}>
       {label && (
-        <span className="text-xs uppercase tracking-widest text-slate-400">{label}</span>
+        <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</span>
       )}
       <span
         className={`font-mono text-3xl font-bold tabular-nums ${
-          urgent ? "text-red-400" : "text-slate-100"
+          urgent ? "text-destructive" : "text-foreground"
         }`}
       >
         {minutes}:{seconds.toString().padStart(2, "0")}

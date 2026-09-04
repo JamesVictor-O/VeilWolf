@@ -1,14 +1,4 @@
-const COLORS = [
-  "bg-rose-500",
-  "bg-amber-500",
-  "bg-lime-500",
-  "bg-emerald-500",
-  "bg-cyan-500",
-  "bg-blue-500",
-  "bg-violet-500",
-  "bg-fuchsia-500",
-  "bg-orange-500",
-];
+const COLORS = ["bg-accent", "bg-secondary", "bg-muted"];
 
 function colorForAddress(address: string): string {
   let hash = 0;
@@ -55,29 +45,29 @@ export function PlayerAvatar({
     <div className={`flex flex-col items-center gap-1 ${className}`}>
       <div className="relative">
         <div
-          className={`flex items-center justify-center rounded-full font-bold text-white ${SIZES[size]} ${
-            isAlive ? colorForAddress(address) : "bg-slate-700"
+          className={`flex items-center justify-center rounded-full border border-border font-mono font-semibold text-foreground ${SIZES[size]} ${
+            isAlive ? colorForAddress(address) : "bg-muted"
           } ${isAlive ? "" : "opacity-40 grayscale"}`}
         >
           {initials || "?"}
         </div>
         {isHost && (
-          <span className="absolute -right-1 -top-1 text-xs" title="Host">
-            👑
+          <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-primary text-[8px] font-black text-primary-foreground" title="Host">
+            H
           </span>
         )}
         {ready && isAlive && (
-          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-slate-950 bg-emerald-400" />
+          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-primary" title="Ready" />
         )}
         {!isAlive && (
           <span className="absolute inset-0 flex items-center justify-center text-lg">
-            💀
+            ×
           </span>
         )}
       </div>
       <span
         className={`max-w-[5rem] truncate text-xs ${
-          isAlive ? "text-slate-200" : "text-slate-500 line-through"
+          isAlive ? "text-foreground" : "text-muted-foreground line-through"
         }`}
       >
         {nickname}

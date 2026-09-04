@@ -1,10 +1,13 @@
 "use client";
 
-import { mockChainClient, type Address, type Role } from "@veilwolf/game-engine";
+import { type Address, type Role } from "@veilwolf/game-engine";
 import { Button } from "@veilwolf/ui";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useGameSync } from "@/lib/useGameSync";
+import { chainClient } from "@/lib/chainClient";
+import { LoadingState } from "@/components/AsyncState";
+import { ScreenFrame } from "@/components/ScreenFrame";
 
 export default function ReplayPage() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -13,15 +16,11 @@ export default function ReplayPage() {
   const [reveal, setReveal] = useState<Record<Address, Role> | null>(null);
 
   useEffect(() => {
-    mockChainClient.getFinalReveal(gameId).then(setReveal);
+    chainClient.getFinalReveal(gameId).then(setReveal);
   }, [gameId]);
 
   if (!gameState) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-slate-500">
-        Loading replay…
-      </div>
-    );
+    return <ScreenFrame title="Reconstructing the story"><LoadingState label="Loading replay" /></ScreenFrame>;
   }
 
   function nicknameOf(addr: Address): string {
@@ -29,54 +28,52 @@ export default function ReplayPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-6 py-10">
-      <h1 className="text-center text-2xl font-bold text-slate-50">Replay</h1>
-
+    <ScreenFrame eyebrow="Public history" title="How the night unfolded." description="A redacted replay built only from finalized public outcomes.">
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
         {gameState.roundHistory.map((round) => (
           <div
             key={round.turnNumber}
-            className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
+            className="rounded-md border border-border bg-card p-5"
           >
-            <p className="text-xs uppercase tracking-widest text-violet-400">
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-primary">
               Turn {round.turnNumber}
             </p>
-            <ul className="mt-2 space-y-1 text-sm text-slate-300">
+            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
               {round.nightDeaths.length > 0 ? (
                 round.nightDeaths.map((addr) => (
                   <li key={addr}>
-                    🌙 {nicknameOf(addr)} was killed in the night
+                    Night · {nicknameOf(addr)} was killed
                     {reveal && ` (${reveal[addr]})`}
                   </li>
                 ))
               ) : (
-                <li>🌙 No one died in the night</li>
+                <li>Night · No one died</li>
               )}
               {round.eliminatedByVote ? (
                 <li>
-                  ⚖️ {nicknameOf(round.eliminatedByVote)} was voted out
+                  Vote · {nicknameOf(round.eliminatedByVote)} was eliminated
                   {reveal && ` (${reveal[round.eliminatedByVote]})`}
                 </li>
               ) : (
-                <li>⚖️ The vote was tied — no elimination</li>
+                <li>Vote · Tied, no elimination</li>
               )}
             </ul>
           </div>
         ))}
         {gameState.roundHistory.length === 0 && (
-          <p className="text-center text-slate-500">No rounds completed yet.</p>
+          <div className="rounded-md border border-dashed border-border p-8 text-center"><p className="text-sm font-medium">No completed rounds.</p><p className="mt-1 text-xs text-muted-foreground">The public story appears here after the first vote.</p></div>
         )}
       </div>
 
       {gameState.winner && (
-        <p className="text-center font-semibold text-slate-200">
-          Winner: {gameState.winner === "WEREWOLVES" ? "🐺 Werewolves" : "🕊️ Villagers"}
+        <p className="text-center font-semibold text-foreground">
+          Winner: {gameState.winner === "WEREWOLVES" ? "Werewolves" : "Villagers"}
         </p>
       )}
 
       <Button variant="secondary" onClick={() => router.push("/home")}>
         Back to Home
       </Button>
-    </div>
+    </ScreenFrame>
   );
 }

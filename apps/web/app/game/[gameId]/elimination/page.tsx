@@ -1,10 +1,13 @@
 "use client";
 
-import { mockChainClient, type Role } from "@veilwolf/game-engine";
+import { type Role } from "@veilwolf/game-engine";
 import { Button, RoleCard } from "@veilwolf/ui";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useGameSync } from "@/lib/useGameSync";
+import { chainClient } from "@/lib/chainClient";
+import { LoadingState } from "@/components/AsyncState";
+import { ScreenFrame } from "@/components/ScreenFrame";
 
 export default function EliminationPage() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -20,15 +23,11 @@ export default function EliminationPage() {
 
   useEffect(() => {
     if (!gameId || !eliminated) return;
-    mockChainClient.getRevealedRole(gameId, eliminated).then(setRole);
+    chainClient.getRevealedRole(gameId, eliminated).then(setRole);
   }, [gameId, eliminated]);
 
   if (!gameState) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-slate-500">
-        Loading results…
-      </div>
-    );
+    return <ScreenFrame title="Counting every ballot"><LoadingState label="Loading results" /></ScreenFrame>;
   }
 
   function handleContinue() {
@@ -40,24 +39,22 @@ export default function EliminationPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-10 text-center">
+    <ScreenFrame eyebrow="The verdict" title={eliminatedPlayer ? `${eliminatedPlayer.nickname} leaves the village.` : "The village could not decide."} description={eliminatedPlayer ? "The ballot is final. Their role can now be revealed according to this game's rules." : "The vote was tied. No one is eliminated this round."}>
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
       {eliminatedPlayer ? (
         <>
-          <span className="text-5xl">⚖️</span>
-          <h1 className="text-2xl font-bold text-slate-50">
-            {eliminatedPlayer.nickname} was eliminated
-          </h1>
           {role && <RoleCard role={role} className="mx-auto" />}
 
           {isMe && !posted && (
             <div className="flex w-full max-w-xs flex-col gap-2">
-              <textarea
+              <label htmlFor="last-words" className="text-left text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Last words</label><textarea
+                id="last-words"
                 value={lastWords}
                 onChange={(e) => setLastWords(e.target.value)}
                 placeholder="Any last words? (only shown on your screen)"
                 maxLength={200}
                 rows={3}
-                className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-violet-500"
+                className="rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
               <Button variant="secondary" onClick={() => setPosted(true)} disabled={!lastWords.trim()}>
                 Share last words
@@ -65,20 +62,18 @@ export default function EliminationPage() {
             </div>
           )}
           {isMe && posted && (
-            <p className="max-w-xs italic text-slate-400">&ldquo;{lastWords}&rdquo;</p>
+            <p className="max-w-xs italic text-muted-foreground">&ldquo;{lastWords}&rdquo;</p>
           )}
         </>
       ) : (
         <>
-          <span className="text-5xl">🤝</span>
-          <h1 className="text-2xl font-bold text-slate-50">The vote was tied</h1>
-          <p className="text-slate-400">No one was eliminated this round.</p>
+          <div className="grid h-24 w-24 place-items-center rounded-full border border-border font-mono text-3xl text-muted-foreground">—</div>
         </>
       )}
 
       <Button onClick={handleContinue}>
         {gameState.winner ? "See final results" : "Continue to Night"}
-      </Button>
-    </div>
+      </Button></div>
+    </ScreenFrame>
   );
 }

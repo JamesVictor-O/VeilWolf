@@ -2,35 +2,39 @@ import type { Role } from "@veilwolf/game-engine";
 
 const ROLE_COPY: Record<
   Role,
-  { label: string; description: string; accent: string; emoji: string }
+  { label: string; description: string; accent: string; sigil: string; allegiance: string }
 > = {
   WEREWOLF: {
     label: "Werewolf",
     description:
       "Each night, coordinate with your fellow werewolf to choose a villager to eliminate. Blend in during the day.",
-    accent: "border-red-500/60 from-red-950/60 to-red-900/20 text-red-200",
-    emoji: "🐺",
+    accent: "border-destructive/60 text-foreground",
+    sigil: "W",
+    allegiance: "The pack",
   },
   VILLAGER: {
     label: "Villager",
     description:
       "You have no night action. Use the day to find contradictions and vote out the werewolves before they outnumber you.",
-    accent: "border-slate-400/40 from-slate-800/60 to-slate-800/20 text-slate-200",
-    emoji: "🧑‍🌾",
+    accent: "border-border text-foreground",
+    sigil: "V",
+    allegiance: "The village",
   },
   DOCTOR: {
     label: "Doctor",
     description:
       "Each night, choose one player to heal. If they're attacked, they survive. You may heal yourself.",
-    accent: "border-emerald-500/60 from-emerald-950/60 to-emerald-900/20 text-emerald-200",
-    emoji: "🩺",
+    accent: "border-primary/60 text-foreground",
+    sigil: "+",
+    allegiance: "The village",
   },
   SEER: {
     label: "Seer",
     description:
       "Each night, investigate one player to learn if they are a werewolf. Use what you learn carefully.",
-    accent: "border-violet-500/60 from-violet-950/60 to-violet-900/20 text-violet-200",
-    emoji: "🔮",
+    accent: "border-primary/60 text-foreground",
+    sigil: "S",
+    allegiance: "The village",
   },
 };
 
@@ -46,21 +50,23 @@ export function RoleCard({ role, revealed = true, className = "" }: RoleCardProp
   if (!revealed) {
     return (
       <div
-        className={`flex aspect-[3/4] w-full max-w-xs flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-600 bg-slate-900/60 ${className}`}
+        className={`flex aspect-[3/4] w-full max-w-xs flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card ${className}`}
       >
-        <span className="text-4xl">❔</span>
-        <span className="mt-2 text-sm text-slate-400">Tap to reveal</span>
+        <span className="grid h-16 w-16 place-items-center rounded-full border border-primary/50 font-mono text-2xl text-primary">?</span>
+        <span className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Reveal when alone</span>
       </div>
     );
   }
 
   return (
     <div
-      className={`flex aspect-[3/4] w-full max-w-xs flex-col items-center justify-center gap-3 rounded-2xl border-2 bg-gradient-to-b p-6 text-center shadow-xl ${copy.accent} ${className}`}
+      className={`relative flex aspect-[3/4] w-full max-w-xs flex-col items-center justify-center gap-4 overflow-hidden rounded-lg border bg-card p-8 text-center ${copy.accent} ${className}`}
     >
-      <span className="text-5xl">{copy.emoji}</span>
-      <span className="text-2xl font-bold tracking-wide">{copy.label}</span>
-      <p className="text-sm leading-relaxed opacity-90">{copy.description}</p>
+      <span aria-hidden="true" className="absolute -right-16 -top-16 h-48 w-48 rounded-full border border-border" />
+      <span className="grid h-20 w-20 place-items-center rounded-full border border-primary/60 font-mono text-3xl text-primary">{copy.sigil}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{copy.allegiance}</span>
+      <span className="text-3xl font-semibold tracking-tight">{copy.label}</span>
+      <p className="max-w-[26ch] text-sm leading-6 text-muted-foreground">{copy.description}</p>
     </div>
   );
 }

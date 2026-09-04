@@ -56,7 +56,25 @@ describe("stateMachine", () => {
         actor: wolf,
         role: "WEREWOLF",
         target: villagerTarget,
-      });
+      }, roles);
+      state = result.gameState;
+      pendingActions = result.pendingActions;
+    }
+
+    for (const [actor, role] of Object.entries(roles)) {
+      if (role !== "DOCTOR" && role !== "SEER") continue;
+      const supportTarget =
+        role === "DOCTOR"
+          ? state.players.find(
+              (player) => player.address !== villagerTarget && player.isAlive,
+            )!.address
+          : villagerTarget;
+      const result = submitNightAction(
+        state,
+        pendingActions,
+        { actor, role, target: supportTarget },
+        roles,
+      );
       state = result.gameState;
       pendingActions = result.pendingActions;
     }
@@ -94,6 +112,83 @@ describe("stateMachine", () => {
     expect(state.winner).toBeNull();
     expect(state.phase).toBe("NIGHT");
     expect(state.turnNumber).toBe(2);
+    expect(
+      state.players
+        .filter((player) => roles[player.address] === "VILLAGER" && player.isAlive)
+        .every((player) => player.hasActedThisNight),
+    ).toBe(true);
+  });
+
+  it("rejects role spoofing and werewolf friendly fire", () => {
+    const started = startGame(seedGame(), { actor: "p0" });
+    const wolf = Object.keys(started.roleAssignments).find(
+      (address) => started.roleAssignments[address] === "WEREWOLF",
+    )!;
+    const otherWolf = Object.keys(started.roleAssignments).find(
+      (address) =>
+        address !== wolf && started.roleAssignments[address] === "WEREWOLF",
+    )!;
+    const villager = Object.keys(started.roleAssignments).find(
+      (address) => started.roleAssignments[address] === "VILLAGER",
+    )!;
+
+    expect(() =>
+      submitNightAction(
+        started.gameState,
+        [],
+        { actor: villager, role: "SEER", target: wolf },
+        started.roleAssignments,
+      ),
+    ).toThrow("assigned role");
+
+    expect(() =>
+      submitNightAction(
+        started.gameState,
+        [],
+        { actor: wolf, role: "WEREWOLF", target: otherWolf },
+        started.roleAssignments,
+      ),
+    ).toThrow("another werewolf");
+  });
+
+  it("produces no kill when werewolf choices are tied", () => {
+    const started = startGame(seedGame(), { actor: "p0" });
+    let state = started.gameState;
+    const roles = started.roleAssignments;
+    const wolves = Object.keys(roles).filter((address) => roles[address] === "WEREWOLF");
+    const targets = Object.keys(roles).filter((address) => roles[address] !== "WEREWOLF");
+    let pending: NightAction[] = [];
+
+    for (const [index, wolf] of wolves.entries()) {
+      const result = submitNightAction(
+        state,
+        pending,
+        { actor: wolf!, role: "WEREWOLF", target: targets[index]! },
+        roles,
+      );
+      state = result.gameState;
+      pending = result.pendingActions;
+    }
+    for (const [actor, role] of Object.entries(roles)) {
+      if (role !== "DOCTOR" && role !== "SEER") continue;
+      const result = submitNightAction(
+        state,
+        pending,
+        { actor, role, target: targets[2]! },
+        roles,
+      );
+      state = result.gameState;
+      pending = result.pendingActions;
+    }
+
+    expect(resolveDawn(state, pending, roles).nightDeaths).toEqual([]);
+  });
+
+  it("requires every living special role to act before dawn", () => {
+    const started = startGame(seedGame(), { actor: "p0" });
+    expect(() => resolveDawn(started.gameState, [], started.roleAssignments)).toThrow(
+      "All eligible night actions",
+    );
   });
 
   it("declares WEREWOLVES victory once wolves >= remaining villagers", () => {

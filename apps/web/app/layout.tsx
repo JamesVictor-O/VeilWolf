@@ -1,5 +1,16 @@
 import type { Metadata } from "next";
+import { JetBrains_Mono, Manrope } from "next/font/google";
 import "./globals.css";
+
+const sans = Manrope({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 
 export const metadata: Metadata = {
   title: "VeilWolf",
@@ -12,9 +23,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-slate-950 antialiased">
-        <div className="mx-auto flex min-h-screen w-full max-w-md flex-col">
+    <html lang="en" className={`dark ${sans.variable} ${mono.variable}`}>
+      <body className="min-h-screen bg-background font-sans text-foreground antialiased">
+        <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col overflow-hidden">
           {children}
         </div>
       </body>

@@ -199,17 +199,36 @@ export function submitNightAction(
   state: GameState,
   pendingActions: NightAction[],
   action: NightAction,
+  roleAssignments: Record<Address, Role>,
+  previousActions: NightAction[] = [],
 ): { gameState: GameState; pendingActions: NightAction[] } {
   assert(state.phase === "NIGHT", "Not currently night");
   const actor = findPlayer(state, action.actor);
   assert(actor.isAlive, "Dead players cannot act");
   assert(action.role !== "VILLAGER", "Villagers have no night action");
   assert(
+    roleAssignments[action.actor] === action.role,
+    "Submitted role does not match the player's assigned role",
+  );
+  assert(
     !actor.hasActedThisNight,
     "Player has already submitted a night action this turn",
   );
   const target = findPlayer(state, action.target);
   assert(target.isAlive, "Cannot target a dead player");
+  assert(
+    action.role !== "WEREWOLF" || roleAssignments[action.target] !== "WEREWOLF",
+    "Werewolves cannot target another werewolf",
+  );
+  if (action.role === "DOCTOR" && state.turnNumber > 1) {
+    const lastDoctorAction = [...previousActions]
+      .reverse()
+      .find((previous) => previous.actor === action.actor);
+    assert(
+      lastDoctorAction?.target !== action.target,
+      "Doctor cannot protect the same player on consecutive nights",
+    );
+  }
 
   const players = withUpdatedPlayer(state, action.actor, {
     hasActedThisNight: true,
@@ -235,6 +254,13 @@ export function resolveDawn(
   now = Date.now(),
 ): ResolveDawnResult {
   assert(state.phase === "NIGHT", "Not currently night");
+  const missingActor = state.players.find(
+    (player) =>
+      player.isAlive &&
+      roleAssignments[player.address] !== "VILLAGER" &&
+      !player.hasActedThisNight,
+  );
+  assert(!missingActor, "All eligible night actions must be submitted first");
 
   const werewolfActions = pendingActions.filter((a) => a.role === "WEREWOLF");
   const doctorAction = pendingActions.find((a) => a.role === "DOCTOR");
@@ -307,16 +333,9 @@ function pickMajorityTarget(actions: NightAction[]): Address | null {
   for (const a of actions) {
     counts.set(a.target, (counts.get(a.target) ?? 0) + 1);
   }
-  let best: Address | null = null;
-  let bestCount = -1;
-  for (const a of actions) {
-    const c = counts.get(a.target) ?? 0;
-    if (c > bestCount) {
-      bestCount = c;
-      best = a.target;
-    }
-  }
-  return best;
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  if (ranked.length > 1 && ranked[0]?.[1] === ranked[1]?.[1]) return null;
+  return ranked[0]?.[0] ?? null;
 }
 
 export function advanceToDay(state: GameState, now = Date.now()): GameState {
@@ -476,7 +495,7 @@ export function revealVotes(
       ? players
       : players.map((p) => ({
           ...p,
-          hasActedThisNight: false,
+          hasActedThisNight: roleAssignments[p.address] === "VILLAGER",
           hasVotedThisRound: false,
         })),
     aliveCount,

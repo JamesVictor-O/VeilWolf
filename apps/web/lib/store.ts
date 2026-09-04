@@ -11,12 +11,12 @@
 
 import { create } from "zustand";
 import {
-  mockChainClient,
   type Address,
   type DayLogEntry,
   type GameState,
   type PrivateState,
 } from "@veilwolf/game-engine";
+import { chainClient } from "@/lib/chainClient";
 
 interface GameStore {
   address: Address | null;
@@ -75,20 +75,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   loadGame: async (gameId) => {
     const [gameState, privateState] = await Promise.all([
-      mockChainClient.getGameState(gameId),
+      chainClient.getGameState(gameId),
       get().address
-        ? mockChainClient.getPrivateState(gameId, get().address!)
+        ? chainClient.getPrivateState(gameId, get().address!)
         : Promise.resolve(null),
     ]);
     set({ gameState, privateState });
   },
 
   subscribeToGame: (gameId) => {
-    return mockChainClient.subscribe(gameId, (gameState) => {
+    return chainClient.subscribe(gameId, (gameState) => {
       set({ gameState });
       const address = get().address;
       if (address) {
-        mockChainClient
+        chainClient
           .getPrivateState(gameId, address)
           .then((privateState) => set({ privateState }));
       }
@@ -99,7 +99,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     run(set, async () => {
       const { address, nickname } = get();
       if (!address || !nickname) throw new Error("Set your nickname first");
-      const { gameState, privateState } = await mockChainClient.createGame({
+      const { gameState, privateState } = await chainClient.createGame({
         host: address,
         hostNickname: nickname,
       });
@@ -111,7 +111,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     run(set, async () => {
       const { address, nickname } = get();
       if (!address || !nickname) throw new Error("Set your nickname first");
-      const { gameState, privateState } = await mockChainClient.joinGame({
+      const { gameState, privateState } = await chainClient.joinGame({
         gameId,
         address,
         nickname,
@@ -123,12 +123,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     run(set, async () => {
       const { address, gameState } = get();
       if (!address || !gameState) return;
-      const { gameState: next } = await mockChainClient.startGame({
+      const { gameState: next } = await chainClient.startGame({
         gameId: gameState.gameId,
         actor: address,
       });
       set({ gameState: next });
-      const privateState = await mockChainClient.getPrivateState(
+      const privateState = await chainClient.getPrivateState(
         next.gameId,
         address,
       );
@@ -140,7 +140,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const { address, gameState } = get();
       if (!address || !gameState) return;
       const { gameState: next, privateState } =
-        await mockChainClient.submitNightAction({
+        await chainClient.submitNightAction({
           gameId: gameState.gameId,
           actor: address,
           target,
@@ -152,7 +152,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     run(set, async () => {
       const { gameState } = get();
       if (!gameState) return;
-      const { gameState: next } = await mockChainClient.resolveDawn({
+      const { gameState: next } = await chainClient.resolveDawn({
         gameId: gameState.gameId,
       });
       set({ gameState: next });
@@ -162,7 +162,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     run(set, async () => {
       const { gameState } = get();
       if (!gameState) return;
-      const { gameState: next } = await mockChainClient.advanceToDay({
+      const { gameState: next } = await chainClient.advanceToDay({
         gameId: gameState.gameId,
       });
       set({ gameState: next });
@@ -172,7 +172,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     run(set, async () => {
       const { address, gameState } = get();
       if (!address || !gameState) return;
-      const { gameState: next } = await mockChainClient.postDayMessage({
+      const { gameState: next } = await chainClient.postDayMessage({
         gameId: gameState.gameId,
         author: address,
         message,
@@ -185,7 +185,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     run(set, async () => {
       const { gameState } = get();
       if (!gameState) return;
-      const { gameState: next } = await mockChainClient.advanceToVote({
+      const { gameState: next } = await chainClient.advanceToVote({
         gameId: gameState.gameId,
       });
       set({ gameState: next });
@@ -195,7 +195,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     run(set, async () => {
       const { address, gameState } = get();
       if (!address || !gameState) return;
-      const { gameState: next } = await mockChainClient.submitVote({
+      const { gameState: next } = await chainClient.submitVote({
         gameId: gameState.gameId,
         voter: address,
         target,
@@ -207,7 +207,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     run(set, async () => {
       const { gameState } = get();
       if (!gameState) return;
-      const { gameState: next } = await mockChainClient.revealVotes({
+      const { gameState: next } = await chainClient.revealVotes({
         gameId: gameState.gameId,
       });
       set({ gameState: next });

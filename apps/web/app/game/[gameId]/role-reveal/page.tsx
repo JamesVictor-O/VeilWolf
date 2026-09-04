@@ -4,6 +4,8 @@ import { RoleCard, Button } from "@veilwolf/ui";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useGameSync } from "@/lib/useGameSync";
+import { LoadingState } from "@/components/AsyncState";
+import { ScreenFrame } from "@/components/ScreenFrame";
 
 export default function RoleRevealPage() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -12,38 +14,28 @@ export default function RoleRevealPage() {
   const [revealed, setRevealed] = useState(false);
 
   if (!gameState || !privateState?.role) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-slate-500">
-        Assigning roles…
-      </div>
-    );
+    return <ScreenFrame title="Sealing your role"><LoadingState label="Assigning roles" /></ScreenFrame>;
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6">
-      <div className="text-center">
-        <p className="text-xs uppercase tracking-widest text-slate-500">Turn {gameState.turnNumber}</p>
-        <h1 className="text-2xl font-bold text-slate-50">Your secret role</h1>
-      </div>
-
+    <ScreenFrame eyebrow={`Night ${gameState.turnNumber}`} title={revealed ? "Remember who you are." : "This secret is yours alone."} description={revealed ? "Read your ability carefully. The village will only see what you choose to show." : "Shield your screen, then reveal the role Midnight assigned to you."}>
+      <div className="flex flex-1 flex-col items-center justify-center gap-8">
       <button
         type="button"
-        onClick={() => setRevealed(true)}
-        className="cursor-pointer border-none bg-transparent p-0"
-        aria-label="Reveal role"
+        onClick={() => setRevealed((value) => !value)}
+        className="cursor-pointer rounded-lg border-none bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+        aria-label={revealed ? "Hide role" : "Reveal role"}
+        aria-pressed={revealed}
       >
         <RoleCard role={privateState.role} revealed={revealed} />
       </button>
 
       {revealed ? (
-        <Button onClick={() => router.push(`/game/${gameId}/night`)}>
-          I&apos;m ready for night
-        </Button>
+        <div className="flex w-full max-w-xs flex-col gap-3"><Button onClick={() => router.push(`/game/${gameId}/night`)}>I&apos;m ready for night</Button><Button variant="ghost" onClick={() => setRevealed(false)}>Hide role</Button></div>
       ) : (
-        <p className="text-sm text-slate-500">
-          Make sure no one else can see your screen, then tap the card.
-        </p>
+        <p className="max-w-xs text-center text-xs leading-5 text-muted-foreground">Make sure no one else can see your screen. You can hide the card again before continuing.</p>
       )}
-    </div>
+      </div>
+    </ScreenFrame>
   );
 }

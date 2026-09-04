@@ -2,6 +2,7 @@
 
 import { Button } from "@veilwolf/ui";
 import { useRouter } from "next/navigation";
+import { ScreenFrame } from "@/components/ScreenFrame";
 
 const RULES = [
   {
@@ -30,17 +31,17 @@ export default function TutorialPage() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-6 py-10">
-      <h1 className="text-2xl font-bold text-slate-50">How to play</h1>
-      <div className="flex flex-1 flex-col gap-5 overflow-y-auto">
-        {RULES.map((rule) => (
-          <div key={rule.title} className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-            <h2 className="font-semibold text-violet-300">{rule.title}</h2>
-            <p className="mt-1 text-sm leading-relaxed text-slate-400">{rule.body}</p>
-          </div>
+    <ScreenFrame eyebrow="The rules" title="Survive the night. Control the story." description="Every match moves through the same five beats. Learn the rhythm once; the people make every game different.">
+      <ol className="grid gap-px overflow-hidden rounded-md border border-border bg-border md:grid-cols-2">
+        {RULES.map((rule, index) => (
+          <li key={rule.title} className="bg-card p-6 sm:p-7">
+            <span className="font-mono text-xs text-primary">0{index + 1}</span>
+            <h2 className="mt-5 text-lg font-semibold tracking-tight">{rule.title}</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{rule.body}</p>
+          </li>
         ))}
-      </div>
-      <Button onClick={() => router.push("/home")}>Let&apos;s play</Button>
-    </div>
+      </ol>
+      <Button onClick={() => router.push("/home")} className="mt-8 w-full sm:ml-auto sm:w-auto">Enter the village</Button>
+    </ScreenFrame>
   );
 }

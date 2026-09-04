@@ -1,14 +1,17 @@
 "use client";
 
-import type { Address } from "@veilwolf/game-engine";
+import type { Address, Role } from "@veilwolf/game-engine";
 import { Button, PlayerAvatar } from "@veilwolf/ui";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useGameStore } from "@/lib/store";
 import { useGameSync } from "@/lib/useGameSync";
+import { LoadingState } from "@/components/AsyncState";
+import { ScreenFrame } from "@/components/ScreenFrame";
 
-const ROLE_PROMPT: Record<string, string> = {
+const ROLE_PROMPT: Record<Role, string> = {
   WEREWOLF: "Choose a victim",
+  VILLAGER: "Listen to the silence",
   DOCTOR: "Choose someone to protect",
   SEER: "Choose someone to investigate",
 };
@@ -50,11 +53,7 @@ export default function NightPage() {
   }, [gameState, privateState]);
 
   if (!gameState || !privateState?.role || !self) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-slate-500">
-        Loading night…
-      </div>
-    );
+    return <ScreenFrame title="Night is falling"><LoadingState label="Loading night" /></ScreenFrame>;
   }
 
   const role = privateState.role;
@@ -67,18 +66,17 @@ export default function NightPage() {
       (l) => l.turnNumber === gameState.turnNumber && l.type === "system",
     );
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-        <span className="text-5xl">🌅</span>
-        <h1 className="text-2xl font-bold text-slate-50">Dawn breaks</h1>
-        <div className="flex flex-col gap-2">
+      <ScreenFrame eyebrow={`Night ${gameState.turnNumber} resolved`} title="Dawn breaks over the village." description="The night has made its choice. Only the public outcome is revealed.">
+        <div className="flex flex-1 flex-col justify-center gap-6">
+        <div className="flex max-w-xl flex-col gap-2 border-l border-primary pl-5">
           {dawnLog.map((l) => (
-            <p key={l.id} className="text-slate-300">
+            <p key={l.id} className="text-lg font-medium">
               {l.message}
             </p>
           ))}
         </div>
         {investigation && role === "SEER" && (
-          <p className="rounded-lg border border-violet-700 bg-violet-950/40 px-4 py-2 text-sm text-violet-200">
+          <p className="max-w-xl rounded-md border border-primary/50 bg-card px-5 py-4 text-sm text-foreground">
             Your investigation: this player is{" "}
             <strong>{investigation.isWerewolf ? "a werewolf" : "not a werewolf"}</strong>.
           </p>
@@ -88,30 +86,32 @@ export default function NightPage() {
             await advanceToDay();
             router.push(`/game/${gameId}/day`);
           }}
-          disabled={loading}
+          loading={loading}
+          className="w-full sm:w-fit"
         >
           Continue to Day
-        </Button>
-      </div>
+        </Button></div>
+      </ScreenFrame>
     );
   }
 
   if (self.hasActedThisNight) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-        <span className="text-5xl">🌙</span>
-        <h1 className="text-xl font-bold text-slate-50">
+      <ScreenFrame eyebrow={`Night ${gameState.turnNumber}`} title={role === "VILLAGER" ? "Listen to the silence." : "Your choice is sealed."} description="Your private action stays on this device. The village sees only the final outcome.">
+        <div className="flex flex-1 flex-col items-start justify-center gap-5">
+        <h2 className="text-xl font-semibold">
           {role === "VILLAGER" ? "You have no night action" : "Action submitted"}
-        </h1>
-        <p className="text-sm text-slate-500">
-          Waiting for the rest of the village to finish ({actedCount}/{alivePlayers.length})
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Waiting for the village to finish. <span className="font-mono tabular-nums">{actedCount}/{alivePlayers.length}</span>
         </p>
         {allActed && (
-          <Button onClick={() => resolveDawn()} disabled={loading}>
+          <Button onClick={() => resolveDawn()} loading={loading}>
             Resolve Night
           </Button>
         )}
-      </div>
+        </div>
+      </ScreenFrame>
     );
   }
 
@@ -120,20 +120,16 @@ export default function NightPage() {
   );
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-6 py-10">
-      <div className="text-center">
-        <p className="text-xs uppercase tracking-widest text-slate-500">Turn {gameState.turnNumber}</p>
-        <h1 className="text-xl font-bold text-slate-50">{ROLE_PROMPT[role]}</h1>
-      </div>
-
-      <div className="grid flex-1 grid-cols-3 place-items-center gap-4 content-start">
+    <ScreenFrame eyebrow={`Night ${gameState.turnNumber} · ${role.toLowerCase()}`} title={ROLE_PROMPT[role]} description="Select one living player. Your target remains private while the proof confirms the action follows the rules.">
+      <div className="grid flex-1 grid-cols-3 place-items-center gap-x-4 gap-y-8 rounded-md border border-border bg-card p-6 sm:grid-cols-5 sm:p-8">
         {eligibleTargets.map((p) => (
           <button
             key={p.address}
             type="button"
             onClick={() => setSelected(p.address)}
-            className={`rounded-xl p-2 transition-colors ${
-              selected === p.address ? "bg-violet-600/30 ring-2 ring-violet-500" : ""
+            aria-pressed={selected === p.address}
+            className={`min-h-24 min-w-20 rounded-md p-2 transition-colors duration-100 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
+              selected === p.address ? "bg-accent ring-2 ring-primary" : "hover:bg-muted"
             }`}
           >
             <PlayerAvatar address={p.address} nickname={p.nickname} />
@@ -141,12 +137,14 @@ export default function NightPage() {
         ))}
       </div>
 
-      <Button
+      <div className="mt-6 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">You cannot change a choice after it is sealed.</p><Button
         disabled={!selected || loading}
         onClick={() => selected && submitNightAction(selected)}
+        loading={loading}
+        className="w-full sm:w-auto"
       >
-        Confirm
-      </Button>
-    </div>
+        Lock choice
+      </Button></div>
+    </ScreenFrame>
   );
 }

@@ -45,6 +45,7 @@ import {
   submitNightAction as sm_submitNightAction,
   submitVote as sm_submitVote,
 } from "./stateMachine";
+import type { ChainClient } from "./chainClient";
 
 // ---------------------------------------------------------------------------
 // Storage abstraction — localStorage in the browser, in-memory for Node/tests
@@ -154,83 +155,6 @@ export function generateAddress(): Address {
 // Midnight SDK client when it's ready.
 // ---------------------------------------------------------------------------
 
-export interface ChainClient {
-  createGame(params: {
-    host: Address;
-    hostNickname: string;
-  }): Promise<{ gameState: GameState; privateState: PrivateState }>;
-
-  joinGame(params: {
-    gameId: string;
-    address: Address;
-    nickname: string;
-  }): Promise<{ gameState: GameState; privateState: PrivateState }>;
-
-  startGame(params: {
-    gameId: string;
-    actor: Address;
-  }): Promise<{ gameState: GameState }>;
-
-  submitNightAction(params: {
-    gameId: string;
-    actor: Address;
-    target: Address;
-  }): Promise<{ gameState: GameState; privateState: PrivateState }>;
-
-  resolveDawn(params: { gameId: string }): Promise<{ gameState: GameState }>;
-
-  advanceToDay(params: { gameId: string }): Promise<{ gameState: GameState }>;
-
-  postDayMessage(params: {
-    gameId: string;
-    author: Address;
-    message: string;
-    type?: DayLogEntry["type"];
-  }): Promise<{ gameState: GameState }>;
-
-  advanceToVote(params: { gameId: string }): Promise<{ gameState: GameState }>;
-
-  submitVote(params: {
-    gameId: string;
-    voter: Address;
-    target: Address;
-  }): Promise<{ gameState: GameState }>;
-
-  revealVotes(params: { gameId: string }): Promise<{ gameState: GameState }>;
-
-  getGameState(gameId: string): Promise<GameState | null>;
-
-  getPrivateState(
-    gameId: string,
-    address: Address,
-  ): Promise<PrivateState | null>;
-
-  /**
-   * Selective disclosure: a player's role is only revealed once they are
-   * eliminated (isAlive === false). Mirrors the kind of one-off reveal
-   * circuit a real Compact contract could expose without disclosing the
-   * full role assignment.
-   */
-  getRevealedRole(gameId: string, address: Address): Promise<Role | null>;
-
-  /** Full role assignment, only once the game has ended. */
-  getFinalReveal(gameId: string): Promise<Record<Address, Role> | null>;
-
-  /** True once every alive player eligible to act this night has acted. */
-  allEligibleActed(gameId: string): Promise<boolean>;
-
-  /** True once every alive player has voted this round. */
-  allEligibleVoted(gameId: string): Promise<boolean>;
-
-  /**
-   * Subscribe to changes in this game's public state, including ones made
-   * from another browser tab (via the localStorage `storage` event). Mirrors
-   * the subscription model a real chain client would offer over ledger
-   * state updates.
-   */
-  subscribe(gameId: string, listener: (state: GameState) => void): () => void;
-}
-
 // ---------------------------------------------------------------------------
 // Implementation
 // ---------------------------------------------------------------------------
@@ -297,6 +221,8 @@ export const mockChainClient: ChainClient = {
       record.gameState,
       record.pendingNightActions,
       action,
+      record.roleAssignments,
+      privateState.nightActionsHistory,
     );
     const nextPrivateState: PrivateState = {
       ...privateState,

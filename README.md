@@ -7,6 +7,9 @@ victory → replay — is playable locally against a mocked chain layer, built
 so that layer is a clean drop-in replacement once the real Midnight Compact
 TS SDK is ready.
 
+The build-ready product, protocol, security, UX, retention, repository, and
+delivery blueprint lives in [`docs/PRODUCT_PLAN.md`](docs/PRODUCT_PLAN.md).
+
 ## Quickstart
 
 ```bash
