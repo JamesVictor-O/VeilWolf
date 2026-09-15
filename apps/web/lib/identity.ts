@@ -84,3 +84,8 @@ export function setStoredNickname(nickname: string): void {
 export function setStoredAvatar(avatar: number): void {
   window.sessionStorage.setItem(AVATAR_KEY, String(avatar));
 }
+
+export function getStoredAvatar(): number {
+  const value = Number(window.sessionStorage.getItem(AVATAR_KEY));
+  return Number.isInteger(value) && value >= 0 && value < 5 ? value : 2;
+}

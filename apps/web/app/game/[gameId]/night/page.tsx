@@ -1,13 +1,15 @@
 "use client";
 
 import type { Address, Role } from "@veilwolf/game-engine";
-import { Button, PlayerAvatar } from "@veilwolf/ui";
+import { Button } from "@veilwolf/ui";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useGameStore } from "@/lib/store";
 import { useGameSync } from "@/lib/useGameSync";
 import { LoadingState } from "@/components/AsyncState";
 import { ScreenFrame } from "@/components/ScreenFrame";
+import { GameHeader } from "@/components/GameHeader";
+import { PlayerMask } from "@/components/PlayerMask";
 
 const ROLE_PROMPT: Record<Role, string> = {
   WEREWOLF: "Choose a victim",
@@ -97,21 +99,35 @@ export default function NightPage() {
 
   if (self.hasActedThisNight) {
     return (
-      <ScreenFrame eyebrow={`Night ${gameState.turnNumber}`} title={role === "VILLAGER" ? "Listen to the silence." : "Your choice is sealed."} description="Your private action stays on this device. The village sees only the final outcome.">
-        <div className="flex flex-1 flex-col items-start justify-center gap-5">
-        <h2 className="text-xl font-semibold">
-          {role === "VILLAGER" ? "You have no night action" : "Action submitted"}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Waiting for the village to finish. <span className="font-mono tabular-nums">{actedCount}/{alivePlayers.length}</span>
-        </p>
-        {allActed && (
-          <Button onClick={() => resolveDawn()} loading={loading}>
-            Resolve Night
-          </Button>
-        )}
+      <main className="night-chamber min-h-screen overflow-hidden bg-background text-foreground">
+        <GameHeader context={`Night ${gameState.turnNumber} · actions sealed`} />
+        <div className="mx-auto grid min-h-[calc(100dvh-5rem)] max-w-[1680px] lg:grid-cols-[0.72fr_1.28fr]">
+          <section className="flex flex-col justify-between border-b border-border px-6 py-9 sm:px-10 lg:border-b-0 lg:border-r lg:px-12 lg:py-12 xl:px-16">
+            <div className="game-enter" data-visible="true">
+              <p className="font-mono text-xs uppercase tracking-[0.26em] text-primary">Night {gameState.turnNumber} · the village sleeps</p>
+              <h1 className="mt-6 max-w-[9ch] text-[clamp(3.4rem,8dvh,7rem)] font-semibold leading-[0.88] tracking-[-0.065em]">{role === "VILLAGER" ? "Listen for what moves." : "Your choice is sealed."}</h1>
+              <p className="mt-6 max-w-md text-base leading-7 text-muted-foreground">No name leaves this device. Only the consequence will survive the night.</p>
+            </div>
+            <div className="border-l border-primary pl-5">
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Your status</p>
+              <p className="mt-2 text-lg font-medium">{role === "VILLAGER" ? "No night action" : "Action committed"}</p>
+            </div>
+          </section>
+
+          <section className="night-watch relative flex min-h-[650px] items-center justify-center overflow-hidden px-6 py-10 lg:min-h-0">
+            <div className="night-moon" aria-hidden="true"><span>{actedCount}</span><small>of {alivePlayers.length}</small></div>
+            <div className="relative z-10 w-full max-w-xl text-center">
+              <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">The circle is listening</p>
+              <h2 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">{allActed ? "Every choice is in." : `${alivePlayers.length - actedCount} still move in the dark.`}</h2>
+              <div className="mx-auto mt-10 flex max-w-md justify-center gap-2" aria-label={`${actedCount} of ${alivePlayers.length} players ready`}>
+                {alivePlayers.map((player) => <span key={player.address} className={`night-status-mark ${player.hasActedThisNight ? "is-ready" : ""}`} />)}
+              </div>
+              <p className="mx-auto mt-8 max-w-sm text-sm leading-6 text-muted-foreground">Your screen may rest here. The veil will lift when the last player has chosen.</p>
+              {allActed && <Button onClick={() => resolveDawn()} loading={loading} className="mt-8 w-full sm:w-auto">Call the dawn</Button>}
+            </div>
+          </section>
         </div>
-      </ScreenFrame>
+      </main>
     );
   }
 
@@ -120,31 +136,48 @@ export default function NightPage() {
   );
 
   return (
-    <ScreenFrame eyebrow={`Night ${gameState.turnNumber} · ${role.toLowerCase()}`} title={ROLE_PROMPT[role]} description="Select one living player. Your target remains private while the proof confirms the action follows the rules.">
-      <div className="grid flex-1 grid-cols-3 place-items-center gap-x-4 gap-y-8 rounded-md border border-border bg-card p-6 sm:grid-cols-5 sm:p-8">
-        {eligibleTargets.map((p) => (
+    <main className="night-chamber min-h-screen overflow-hidden bg-background text-foreground">
+      <GameHeader context={`Night ${gameState.turnNumber} · ${role.toLowerCase()}`} />
+      <div className="mx-auto grid min-h-[calc(100dvh-5rem)] max-w-[1680px] lg:grid-cols-[0.62fr_1.38fr]">
+        <section className="flex flex-col justify-between border-b border-border px-6 py-9 sm:px-10 lg:border-b-0 lg:border-r lg:px-12 lg:py-12 xl:px-16">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.26em] text-primary">Night {gameState.turnNumber} · {role.toLowerCase()}</p>
+            <h1 className="mt-6 max-w-[8ch] text-[clamp(3.4rem,8dvh,7rem)] font-semibold leading-[0.88] tracking-[-0.065em]">{ROLE_PROMPT[role]}.</h1>
+            <p className="mt-6 max-w-md text-base leading-7 text-muted-foreground">Your target remains private. The proof confirms only that your move obeyed the rules.</p>
+          </div>
+          <div className="border-l border-primary pl-5">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Before you seal it</p>
+            <p className="mt-2 max-w-sm text-sm leading-6">You cannot change this choice after submission.</p>
+          </div>
+        </section>
+
+        <section className="night-target-stage relative flex flex-col px-5 py-8 sm:px-8 lg:px-10">
+          <div className="flex items-end justify-between gap-4 border-b border-border pb-5">
+            <div><p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">Living masks</p><h2 className="mt-2 text-xl font-medium">Choose carefully</h2></div>
+            <p className="font-mono text-xs tabular-nums text-muted-foreground">{selected ? "01 selected" : "00 selected"}</p>
+          </div>
+          <div className="night-target-grid grid flex-1 grid-cols-3 content-center gap-3 py-8 sm:grid-cols-5">
+            {eligibleTargets.map((p, index) => (
           <button
             key={p.address}
             type="button"
             onClick={() => setSelected(p.address)}
             aria-pressed={selected === p.address}
-            className={`min-h-24 min-w-20 rounded-md p-2 transition-colors duration-100 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
-              selected === p.address ? "bg-accent ring-2 ring-primary" : "hover:bg-muted"
-            }`}
+            className={`night-target group relative min-h-44 border p-3 text-left transition-[border-color,background-color,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${selected === p.address ? "is-selected border-primary bg-accent" : "border-border bg-card hover:border-primary/60"}`}
           >
-            <PlayerAvatar address={p.address} nickname={p.nickname} />
+            <span className="font-mono text-[10px] text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
+            <PlayerMask index={index} name={p.nickname} size="lg" />
+            <span className="mt-2 block truncate text-center text-sm font-medium">{p.nickname}</span>
+            <span className="mt-1 block text-center font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">{selected === p.address ? "Marked" : "Unmarked"}</span>
           </button>
         ))}
+          </div>
+          <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">{selected ? "One mask has been marked." : "Select one living player."}</p>
+            <Button disabled={!selected || loading} onClick={() => selected && submitNightAction(selected)} loading={loading} className="w-full sm:w-auto">Seal this choice</Button>
+          </div>
+        </section>
       </div>
-
-      <div className="mt-6 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">You cannot change a choice after it is sealed.</p><Button
-        disabled={!selected || loading}
-        onClick={() => selected && submitNightAction(selected)}
-        loading={loading}
-        className="w-full sm:w-auto"
-      >
-        Lock choice
-      </Button></div>
-    </ScreenFrame>
+    </main>
   );
 }

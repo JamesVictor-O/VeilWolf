@@ -323,6 +323,331 @@
     transform: scale(1.055) translateY(-2px);
   }
 
+  .home-enter {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  .home-enter[data-visible="true"] {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      opacity 300ms cubic-bezier(0, 0, 0.2, 1),
+      transform 300ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .home-seal {
+    position: absolute;
+    left: -12rem;
+    top: 50%;
+    width: min(66vw, 42rem);
+    aspect-ratio: 1;
+    transform: translateY(-50%);
+    overflow: hidden;
+    border: 1px solid color-mix(in oklch, var(--primary) 28%, var(--border));
+    border-radius: 9999px;
+    opacity: 0.13;
+  }
+
+  .home-seal-mark {
+    filter: invert(1) contrast(1.08);
+    mix-blend-mode: screen;
+  }
+
+  .home-operative {
+    filter: saturate(0.62) brightness(0.55);
+    opacity: 0.56;
+    mask-image: linear-gradient(to top, black 58%, transparent 100%);
+  }
+
+  .mission-card {
+    clip-path: polygon(0 0, calc(100% - 1rem) 0, 100% 1rem, 100% 100%, 1rem 100%, 0 calc(100% - 1rem));
+  }
+
+  .waiting-arena {
+    background-image:
+      linear-gradient(color-mix(in oklch, var(--border) 45%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklch, var(--border) 30%, transparent) 1px, transparent 1px);
+    background-size: 100% 9rem, 18rem 100%;
+  }
+
+  .waiting-invitation {
+    background: color-mix(in oklch, var(--background) 94%, transparent);
+  }
+
+  .waiting-code-panel {
+    border: 1px solid var(--border);
+    padding: 1.35rem;
+    background: color-mix(in oklch, var(--card) 80%, transparent);
+    clip-path: polygon(0 0, calc(100% - 1rem) 0, 100% 1rem, 100% 100%, 0 100%);
+  }
+
+  .waiting-stage::before {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    content: "";
+    background: radial-gradient(circle at 50% 52%, color-mix(in oklch, var(--primary) 7%, transparent), transparent 43%);
+  }
+
+  .waiting-ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    border-radius: 9999px;
+    pointer-events: none;
+  }
+
+  .waiting-ring-outer {
+    width: min(76%, 35rem);
+    border: 1px solid color-mix(in oklch, var(--primary) 34%, var(--border));
+    outline: 1px solid color-mix(in oklch, var(--border) 55%, transparent);
+    outline-offset: 0.65rem;
+  }
+
+  .waiting-ring-outer::before,
+  .waiting-ring-outer::after {
+    position: absolute;
+    width: 0.55rem;
+    height: 0.55rem;
+    border: 1px solid var(--primary);
+    background: var(--background);
+    content: "";
+    transform: rotate(45deg);
+  }
+
+  .waiting-ring-outer::before { left: 10%; top: 18%; }
+  .waiting-ring-outer::after { bottom: 9%; right: 24%; }
+
+  .waiting-ring-inner {
+    width: min(47%, 21rem);
+    border: 1px dashed color-mix(in oklch, var(--primary) 28%, var(--border));
+  }
+
+  .waiting-center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 2;
+    display: grid;
+    width: 9.5rem;
+    aspect-ratio: 1;
+    place-content: center;
+    translate: -50% -50%;
+    text-align: center;
+  }
+
+  .waiting-center-mark {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: invert(1) contrast(1.1);
+    mix-blend-mode: screen;
+    opacity: 0.09;
+  }
+
+  .waiting-seat {
+    position: absolute;
+    left: var(--seat-x);
+    top: var(--seat-y);
+    z-index: 3;
+    width: 6.4rem;
+    transform: translate(-50%, -50%);
+  }
+
+  .waiting-portrait {
+    position: relative;
+    width: 4.75rem;
+    height: 4.75rem;
+    margin-inline: auto;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    background: var(--card);
+  }
+
+  .waiting-seat.is-claimed .waiting-portrait {
+    border-color: color-mix(in oklch, var(--primary) 60%, var(--border));
+  }
+
+  .waiting-seat.is-claimed .waiting-portrait::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    border: 3px solid var(--background);
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 28%, transparent);
+  }
+
+  .waiting-seat.is-empty .waiting-portrait {
+    display: grid;
+    place-items: center;
+    border-style: dashed;
+  }
+
+  .waiting-seat.is-empty .waiting-portrait::after {
+    position: absolute;
+    inset: 0.55rem;
+    content: "";
+    border: 1px solid color-mix(in oklch, var(--primary) 55%, transparent);
+    border-radius: 9999px;
+  }
+
+  .waiting-empty-rune {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--muted-foreground);
+  }
+
+  .game-enter {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  .game-enter[data-visible="true"] {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .role-stage::before,
+  .night-watch::before,
+  .night-target-stage::before {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    content: "";
+    background-image: linear-gradient(color-mix(in oklch, var(--border) 35%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklch, var(--border) 25%, transparent) 1px, transparent 1px);
+    background-size: 100% 8rem, 9rem 100%;
+    opacity: 0.5;
+  }
+
+  .role-orbit {
+    position: absolute;
+    width: min(80vw, 42rem);
+    aspect-ratio: 1;
+    overflow: hidden;
+    border: 1px solid color-mix(in oklch, var(--primary) 25%, var(--border));
+    border-radius: 9999px;
+    opacity: 0.08;
+  }
+
+  .role-orbit img,
+  .role-seal img {
+    filter: invert(1) contrast(1.08);
+    mix-blend-mode: screen;
+  }
+
+  .role-dossier {
+    perspective: 1200px;
+  }
+
+  .role-dossier-inner {
+    position: relative;
+    aspect-ratio: 3 / 4.35;
+    transform-style: preserve-3d;
+    transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .role-dossier-inner[data-revealed="true"] {
+    transform: rotateY(180deg);
+  }
+
+  .role-dossier-back,
+  .role-dossier-front {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--card);
+    backface-visibility: hidden;
+    clip-path: polygon(0 0, calc(100% - 1.25rem) 0, 100% 1.25rem, 100% 100%, 1.25rem 100%, 0 calc(100% - 1.25rem));
+  }
+
+  .role-dossier-back {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .role-dossier-front {
+    display: grid;
+    grid-template-rows: 1.12fr 0.88fr;
+    transform: rotateY(180deg);
+  }
+
+  .role-seal {
+    display: grid;
+    width: 7.5rem;
+    aspect-ratio: 1;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--primary);
+    border-radius: 9999px;
+  }
+
+  .role-seal img { width: 85%; height: 85%; object-fit: contain; }
+  .role-portrait { position: relative; overflow: hidden; background: var(--background); }
+  .role-portrait::after { position: absolute; inset: 0; content: ""; background: linear-gradient(to top, var(--card), transparent 45%); }
+
+  .player-mask {
+    position: relative;
+    flex: none;
+    overflow: hidden;
+    border: 1px solid color-mix(in oklch, var(--primary) 40%, var(--border));
+    border-radius: 9999px;
+    background: var(--background);
+  }
+
+  .player-mask-sm { width: 2.75rem; height: 2.75rem; }
+  .player-mask-md { width: 4rem; height: 4rem; }
+  .player-mask-lg { width: 6rem; height: 6rem; margin-inline: auto; }
+
+  .night-target {
+    clip-path: polygon(0 0, calc(100% - 0.65rem) 0, 100% 0.65rem, 100% 100%, 0 100%);
+  }
+
+  .night-target:active { transform: scale(0.98); }
+  .night-target.is-selected::after { position: absolute; inset: 0.35rem; border: 1px solid var(--primary); content: ""; pointer-events: none; }
+  .night-target.is-selected .player-mask { border-color: var(--primary); }
+
+  .night-moon {
+    position: absolute;
+    display: grid;
+    width: min(72vw, 34rem);
+    aspect-ratio: 1;
+    place-content: center;
+    border: 1px solid color-mix(in oklch, var(--primary) 30%, var(--border));
+    border-radius: 9999px;
+    color: color-mix(in oklch, var(--foreground) 10%, transparent);
+    text-align: center;
+  }
+
+  .night-moon::after { position: absolute; inset: 2rem; border: 1px dashed var(--border); border-radius: inherit; content: ""; }
+  .night-moon span { font-family: var(--font-mono); font-size: clamp(7rem, 20vw, 16rem); line-height: 0.8; }
+  .night-moon small { margin-top: 1rem; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase; }
+
+  .night-status-mark { width: 0.45rem; height: 2.6rem; border: 1px solid var(--border); background: var(--background); }
+  .night-status-mark.is-ready { border-color: var(--primary); background: var(--primary); }
+
+  .day-panorama .player-mask { position: absolute; right: 8%; bottom: -55%; width: 13rem; height: 13rem; opacity: 0.7; }
+  .day-player-row { clip-path: polygon(0 0, calc(100% - 0.55rem) 0, 100% 0.55rem, 100% 100%, 0 100%); }
+  .day-transcript { scrollbar-color: var(--border) transparent; }
+
+  @media (min-width: 1024px) {
+    .home-title {
+      max-width: 9ch;
+      font-size: clamp(3.5rem, 8dvh, 6.5rem);
+    }
+  }
+
   @media (min-width: 1024px) {
     .tutorial-title {
       font-size: clamp(2.75rem, 6dvh, 4.5rem);
@@ -374,6 +699,27 @@
   .tutorial-role-portrait {
     animation: tutorial-role-breathe 5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
   }
+
+  .home-seal-mark {
+    animation: identity-wolf-turn 42s linear infinite reverse;
+  }
+
+  .home-operative img {
+    transform-origin: 50% 100%;
+    animation: home-operative-breathe 7s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+
+  .waiting-enter { animation: waiting-enter 560ms cubic-bezier(0.16, 1, 0.3, 1) var(--waiting-delay, 0ms) both; }
+  .waiting-ring-outer { animation: waiting-ring-turn 48s linear infinite; }
+  .waiting-ring-inner { animation: waiting-ring-turn 36s linear infinite reverse; }
+  .waiting-center-mark { animation: waiting-seal-turn 42s linear infinite; }
+  .waiting-seat { animation: waiting-seat-arrive 600ms cubic-bezier(0.16, 1, 0.3, 1) var(--seat-delay, 0ms) both; }
+  .waiting-seat.is-empty .waiting-portrait::after { animation: waiting-seat-pulse 2.8s ease-in-out infinite; }
+  .role-orbit { animation: identity-wolf-turn 52s linear infinite; }
+  .role-seal img { animation: identity-wolf-turn 32s linear infinite reverse; }
+  .role-scan { animation: role-scan 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+  .night-moon { animation: night-moon-breathe 6s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate; }
+  .night-status-mark.is-ready { animation: night-mark-arrive 300ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 }
 
 @keyframes veil-sigil-enter {
@@ -409,6 +755,51 @@
 @keyframes tutorial-role-breathe {
   from { transform: translateY(0); }
   to { transform: translateY(-4px); }
+}
+
+@keyframes home-operative-breathe {
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(-5px) scale(1.012); }
+}
+
+@keyframes waiting-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes waiting-ring-turn {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes waiting-seal-turn {
+  from { transform: rotate(0deg) scale(1.1); }
+  to { transform: rotate(-360deg) scale(1.1); }
+}
+
+@keyframes waiting-seat-arrive {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 18px)) scale(0.9); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes waiting-seat-pulse {
+  0%, 100% { opacity: 0.18; transform: scale(0.82); }
+  50% { opacity: 0.65; transform: scale(1); }
+}
+
+@keyframes role-scan {
+  0%, 100% { opacity: 0.25; transform: scaleX(0.35); }
+  50% { opacity: 0.9; transform: scaleX(1); }
+}
+
+@keyframes night-moon-breathe {
+  from { transform: scale(0.98); opacity: 0.62; }
+  to { transform: scale(1.02); opacity: 0.9; }
+}
+
+@keyframes night-mark-arrive {
+  from { transform: scaleY(0); transform-origin: bottom; }
+  to { transform: scaleY(1); transform-origin: bottom; }
 }
 
 @keyframes onboarding-rule-reveal {
@@ -470,4 +861,38 @@
   .tutorial-role-portrait {
     animation: none;
   }
+
+  .home-enter,
+  .home-enter[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .home-seal-mark,
+  .home-operative img {
+    animation: none;
+  }
+
+  .waiting-enter,
+  .waiting-seat,
+  .waiting-ring,
+  .waiting-center-mark,
+  .waiting-seat.is-empty .waiting-portrait::after {
+    animation: none;
+  }
+
+  .game-enter,
+  .game-enter[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .role-dossier-inner { transition: none; }
+  .role-orbit,
+  .role-seal img,
+  .role-scan,
+  .night-moon,
+  .night-status-mark.is-ready { animation: none; }
 }
