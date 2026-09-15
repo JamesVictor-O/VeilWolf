@@ -4,7 +4,7 @@ import { Button } from "@veilwolf/ui";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
-import { BrandMark } from "@/components/BrandMark";
+import { GameHeader } from "@/components/GameHeader";
 
 /* ─────────────────────────────────────────────────────────
  * ONBOARDING STORYBOARD
@@ -73,70 +73,91 @@ export default function TutorialPage() {
   const isLastChapter = chapter === CHAPTERS.length - 1;
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-8 lg:px-12">
-      <header className="relative z-20 flex items-center justify-between border-b border-border pb-5">
-        <BrandMark />
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Initiation · {chapter + 1}/{CHAPTERS.length}</p>
-      </header>
+    <main className="relative flex min-h-screen flex-col overflow-hidden bg-background">
+      <GameHeader context={`Combat briefing · ${chapter + 1}/${CHAPTERS.length}`} />
 
-      <section className="mx-auto w-full max-w-6xl py-8 sm:py-12">
-        <div className="onboarding-enter grid items-end gap-7 lg:grid-cols-[0.82fr_1.18fr]" data-visible={stage >= 1}>
+      <section className="tutorial-stage mx-auto w-full max-w-7xl flex-1 overflow-y-auto px-5 py-7 sm:px-8 lg:h-[calc(100dvh-5rem)] lg:flex-none lg:overflow-hidden lg:px-12 lg:py-6">
+        <div className="onboarding-enter grid items-center gap-7 lg:h-[36%] lg:grid-cols-[0.78fr_1.22fr]" data-visible={stage >= 1}>
           <div className="relative z-10 pb-1">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Before the first night</p>
-            <h1 className="max-w-3xl text-balance text-4xl font-semibold leading-[0.98] tracking-[-0.045em] sm:text-6xl lg:text-7xl">Someone here is lying.</h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-muted-foreground">Nine enter the village. Everyone receives a secret. By morning, trust becomes the most dangerous weapon in the room.</p>
+            <div className="flex items-center gap-3">
+              <span className="h-px w-10 bg-primary" aria-hidden="true" />
+              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">Pre-match intelligence</p>
+            </div>
+            <h1 className="tutorial-title mt-4 max-w-3xl text-balance text-4xl font-semibold leading-[0.92] tracking-[-0.05em] sm:text-6xl">Someone here is lying.</h1>
+            <p className="mt-4 max-w-lg text-sm leading-6 text-muted-foreground">Nine enter. Four roles are dealt. Only one side leaves the village alive.</p>
           </div>
 
-          <div className="onboarding-enter relative aspect-[16/9] overflow-hidden rounded-md border border-border bg-card" data-visible={stage >= 2}>
+          <div className="tutorial-visual onboarding-enter relative h-full min-h-60 overflow-hidden border border-border bg-card" data-visible={stage >= 2}>
             <Image src="/images/onboarding-village.png" alt="Nine figures gathered by lantern light in a moonlit village, watched by two hidden wolves" fill priority sizes="(max-width: 1024px) 100vw, 58vw" className="object-cover" />
             <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-60" />
-            <div className="absolute bottom-4 left-4 border-l border-primary pl-3 sm:bottom-5 sm:left-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground">9 players · 4 roles · 1 village</p>
+            <div className="absolute left-4 top-4 border border-primary/60 bg-background/80 px-3 py-2 backdrop-blur-sm">
+              <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-primary">Threat detected</p>
+            </div>
+            <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between border-l border-primary pl-3 sm:bottom-5 sm:left-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground">9 combatants · 4 roles · 1 survivor faction</p>
+              <span className="font-mono text-[10px] text-primary">READY // 00:09</span>
             </div>
           </div>
         </div>
 
-        <div className="onboarding-enter mt-10 grid gap-6 border-t border-border pt-6 lg:grid-cols-[0.36fr_0.64fr] lg:gap-10" data-visible={stage >= 2}>
+        <div className="onboarding-enter mt-7 grid gap-5 border-t border-border pt-5 lg:h-[60%] lg:grid-cols-[0.3fr_0.7fr] lg:gap-7" data-visible={stage >= 2}>
           <nav aria-label="How the game unfolds">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">The ritual</p>
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Choose briefing</p>
             <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
               {CHAPTERS.map((item, index) => (
-                <button key={item.phase} type="button" onClick={() => setChapter(index)} aria-current={chapter === index ? "step" : undefined} className={`group min-h-14 rounded-md border px-3 py-3 text-left transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:flex lg:items-center lg:gap-4 lg:px-4 ${chapter === index ? "border-primary bg-accent text-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+                <button key={item.phase} type="button" onClick={() => setChapter(index)} aria-current={chapter === index ? "step" : undefined} className={`tutorial-chapter group min-h-14 border px-3 py-3 text-left transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:flex lg:items-center lg:gap-4 lg:px-4 ${chapter === index ? "border-primary bg-accent text-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
                   <span className="font-mono text-xs text-primary">{item.marker}</span>
-                  <span className="block text-sm font-semibold lg:flex-1">{item.phase}</span>
+                  <span className="block text-sm font-semibold uppercase tracking-[0.08em] lg:flex-1">{item.phase}</span>
                   <span aria-hidden="true" className="hidden font-mono text-xs transition-transform duration-100 group-hover:translate-x-0.5 lg:block">→</span>
                 </button>
               ))}
             </div>
+            <div className="mt-4 hidden border-l border-primary px-4 py-3 lg:block">
+              <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-muted-foreground">Win condition</p>
+              <p className="mt-1 text-xs text-foreground">Expose the enemy before they control the circle.</p>
+            </div>
           </nav>
 
-          <article key={active.phase} className="onboarding-enter onboarding-rule-panel rounded-md border border-border bg-card p-6 sm:p-8" data-visible={stage >= 3} aria-live="polite">
+          <article key={active.phase} className="tutorial-dossier onboarding-enter onboarding-rule-panel flex min-h-0 flex-col border border-border bg-card p-5 sm:p-6" data-visible={stage >= 3} aria-live="polite">
             <div className="flex items-baseline justify-between gap-4">
               <p className="font-mono text-xs uppercase tracking-[0.18em] text-primary">{active.phase}</p>
               <p className="font-mono text-xs text-muted-foreground">0{chapter + 1} / 03</p>
             </div>
-            <h2 className="mt-5 max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl">{active.title}</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">{active.story}</p>
+            <h2 className="mt-3 max-w-2xl text-2xl font-semibold uppercase tracking-[-0.025em] sm:text-3xl">{active.title}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{active.story}</p>
 
-            <ol className="mt-7 grid gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-3">
+            <ol className="mt-4 grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-3">
               {active.beats.map(([title, body], index) => (
-                <li key={title} className="bg-background p-4 sm:min-h-36 sm:p-5" style={{ "--rule-index": index } as CSSProperties}>
-                  <span className="font-mono text-xs text-primary">0{index + 1}</span>
-                  <h3 className="mt-4 text-sm font-semibold">{title}</h3>
-                  <p className="mt-2 text-xs leading-5 text-muted-foreground">{body}</p>
+                <li key={title} className="tutorial-role-card group relative min-h-44 overflow-hidden bg-background" style={{ "--rule-index": index } as CSSProperties}>
+                  <div className="tutorial-role-portrait absolute inset-0" style={{ "--portrait-index": index } as CSSProperties} aria-hidden="true">
+                    <Image
+                      src="/images/veilwolf-role-triptych.png"
+                      alt=""
+                      width={1920}
+                      height={840}
+                      className="absolute top-0 h-full w-[300%] max-w-none object-cover object-top"
+                      style={{ left: `${index * -100}%` }}
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/75 to-transparent" aria-hidden="true" />
+                  <span className="absolute left-4 top-3 z-10 border border-primary/60 bg-background/70 px-2 py-1 font-mono text-[10px] text-primary backdrop-blur-sm">0{index + 1}</span>
+                  <div className="absolute inset-x-0 bottom-0 z-10 p-4">
+                    <h3 className="text-xs font-semibold uppercase tracking-[0.1em]">{title}</h3>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{body}</p>
+                  </div>
                 </li>
               ))}
             </ol>
 
-            <div className="mt-7 flex flex-col gap-5 border-t border-border pt-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="mt-auto flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Remember</p>
                 <p className="mt-1 text-lg font-medium text-foreground">“{active.cue}”</p>
               </div>
               {isLastChapter ? (
-                <Button onClick={() => router.push("/home")} className="w-full sm:w-auto">Enter the village</Button>
+                <Button onClick={() => router.push("/home")} className="tutorial-confirm w-full rounded-none uppercase tracking-[0.12em] sm:w-auto">Begin match</Button>
               ) : (
-                <Button onClick={() => setChapter((current) => current + 1)} className="w-full sm:w-auto">Continue to {CHAPTERS[chapter + 1]!.phase}</Button>
+                <Button onClick={() => setChapter((current) => current + 1)} className="tutorial-confirm w-full rounded-none uppercase tracking-[0.12em] sm:w-auto">Next: {CHAPTERS[chapter + 1]!.phase}</Button>
               )}
             </div>
           </article>

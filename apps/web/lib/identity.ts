@@ -8,6 +8,7 @@ import { generateAddress, type Address } from "@veilwolf/game-engine";
 // "open a second tab to play as player 2" work without any real auth.
 const ADDRESS_KEY = "veilwolf:address";
 const NICKNAME_KEY = "veilwolf:nickname";
+const AVATAR_KEY = "veilwolf:avatar";
 const MATCH_IDENTITY_PREFIX = "veilwolf:match-identity:";
 
 export interface MatchIdentity {
@@ -78,4 +79,8 @@ export function getStoredNickname(): string | null {
 
 export function setStoredNickname(nickname: string): void {
   window.sessionStorage.setItem(NICKNAME_KEY, nickname);
+}
+
+export function setStoredAvatar(avatar: number): void {
+  window.sessionStorage.setItem(AVATAR_KEY, String(avatar));
 }

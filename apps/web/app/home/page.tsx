@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getOrCreateAddress, getStoredNickname } from "@/lib/identity";
 import { useGameStore } from "@/lib/store";
-import { BrandMark } from "@/components/BrandMark";
+import { GameHeader } from "@/components/GameHeader";
 
 export default function HomePage() {
   const router = useRouter();
@@ -53,10 +53,15 @@ export default function HomePage() {
   }
 
   return (
-    <main className="relative grid min-h-screen overflow-hidden bg-brand-bg lg:grid-cols-[1.2fr_0.8fr]">
-      <section className="relative flex min-h-[58vh] flex-col justify-between border-b border-border p-6 sm:p-10 lg:min-h-screen lg:border-b-0 lg:border-r lg:p-14">
+    <main className="relative flex min-h-screen flex-col overflow-hidden bg-brand-bg">
+      <GameHeader context={nickname ? `Operative: ${nickname}` : "Awaiting player"} />
+      <div className="grid flex-1 lg:grid-cols-[1.2fr_0.8fr]">
+      <section className="relative flex min-h-[58vh] flex-col justify-between border-b border-border p-6 sm:p-10 lg:border-b-0 lg:border-r lg:p-14">
         <div aria-hidden="true" className="absolute -left-52 top-1/2 h-[34rem] w-[34rem] -translate-y-1/2 rounded-full border border-border/70" />
-        <BrandMark />
+        <div className="relative flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          <span className="h-px w-10 bg-primary/70" aria-hidden="true" />
+          Social deception // private by design
+        </div>
         <div className="relative max-w-2xl py-16">
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-primary">A game of trust and deception</p>
           <h1 className="text-balance text-5xl font-semibold leading-[0.94] tracking-[-0.055em] sm:text-7xl lg:text-8xl">Every village keeps a secret.</h1>
@@ -105,6 +110,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      </div>
     </main>
   );
 }

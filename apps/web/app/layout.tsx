@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`dark ${sans.variable} ${mono.variable}`}>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
-        <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col overflow-hidden">
+        <div className="relative flex min-h-screen w-full flex-col overflow-hidden">
           {children}
         </div>
       </body>

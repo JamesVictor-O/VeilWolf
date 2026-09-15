@@ -112,6 +112,303 @@
     animation: onboarding-beat-reveal 300ms cubic-bezier(0, 0, 0.2, 1) both;
     animation-delay: calc(var(--rule-index) * 70ms);
   }
+
+  .veilwolf-sigil img,
+  .veil-boot-sigil img {
+    filter: invert(1) contrast(1.08);
+    mix-blend-mode: screen;
+  }
+
+  .game-header::before,
+  .game-header::after {
+    position: absolute;
+    bottom: -1px;
+    width: 18%;
+    height: 1px;
+    content: "";
+    background: var(--primary);
+    opacity: 0.65;
+  }
+
+  .game-header::before {
+    left: 0;
+  }
+
+  .game-header::after {
+    right: 0;
+  }
+
+  .veil-boot::before {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    content: "";
+    opacity: 0.08;
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 3px,
+      var(--foreground) 4px
+    );
+  }
+
+  .veil-boot-ring {
+    position: absolute;
+    width: min(78vw, 38rem);
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+  }
+
+  .identity-ritual::before {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    content: "";
+    opacity: 0.18;
+    background-image: repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent calc(20% - 1px),
+      var(--border) 20%
+    );
+  }
+
+  .ritual-enter {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  .ritual-enter[data-visible="true"] {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      opacity 300ms cubic-bezier(0, 0, 0.2, 1),
+      transform 300ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .identity-fog {
+    position: absolute;
+    inset: auto -15% -18% 35%;
+    height: 55%;
+    pointer-events: none;
+    border-radius: 50%;
+    background: var(--muted);
+    filter: blur(90px);
+    opacity: 0.32;
+  }
+
+  .identity-moon {
+    position: absolute;
+    top: 15%;
+    left: 50%;
+    width: min(36vw, 27rem);
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
+    border-radius: 9999px;
+    overflow: hidden;
+    opacity: 0.2;
+  }
+
+  .identity-moon-mark {
+    filter: invert(1) contrast(1.08);
+    mix-blend-mode: screen;
+  }
+
+  .identity-focus {
+    position: absolute;
+    z-index: 1;
+    bottom: 5rem;
+    left: 0;
+    width: 20%;
+    height: 68%;
+    border-bottom: 1px solid var(--primary);
+    background: linear-gradient(to top, color-mix(in oklch, var(--primary) 12%, transparent), transparent 58%);
+    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .identity-roster {
+    position: relative;
+    z-index: 2;
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  .identity-roster[data-visible="true"] {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      opacity 400ms cubic-bezier(0, 0, 0.2, 1),
+      transform 400ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .identity-console {
+    position: relative;
+  }
+
+  .identity-console::before {
+    position: absolute;
+    top: -0.75rem;
+    right: 0;
+    width: 3rem;
+    height: 1px;
+    content: "";
+    background: var(--primary);
+  }
+
+  .identity-input-frame {
+    background: var(--primary);
+    clip-path: polygon(0 0, calc(100% - 1rem) 0, 100% 1rem, 100% 100%, 1rem 100%, 0 calc(100% - 1rem));
+  }
+
+  .identity-name-input {
+    clip-path: polygon(0 0, calc(100% - 1rem) 0, 100% 1rem, 100% 100%, 1rem 100%, 0 calc(100% - 1rem));
+  }
+
+  .identity-name-input:-webkit-autofill,
+  .identity-name-input:-webkit-autofill:hover,
+  .identity-name-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--foreground);
+    box-shadow: 0 0 0 1000px var(--card) inset;
+    caret-color: var(--foreground);
+  }
+
+  .identity-dossier {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 0.75rem), calc(100% - 0.75rem) 100%, 0 100%);
+  }
+
+  .identity-confirm {
+    clip-path: polygon(0.75rem 0, 100% 0, 100% calc(100% - 0.75rem), calc(100% - 0.75rem) 100%, 0 100%, 0 0.75rem);
+  }
+
+  .tutorial-visual,
+  .tutorial-dossier {
+    clip-path: polygon(0 0, calc(100% - 1rem) 0, 100% 1rem, 100% 100%, 1rem 100%, 0 calc(100% - 1rem));
+  }
+
+  .tutorial-chapter {
+    clip-path: polygon(0 0, calc(100% - 0.6rem) 0, 100% 0.6rem, 100% 100%, 0 100%);
+  }
+
+  .tutorial-confirm {
+    clip-path: polygon(0.65rem 0, 100% 0, 100% calc(100% - 0.65rem), calc(100% - 0.65rem) 100%, 0 100%, 0 0.65rem);
+  }
+
+  .tutorial-role-card::after {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    content: "";
+    border-top: 1px solid transparent;
+    transition: border-color 150ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .tutorial-role-card:hover::after {
+    border-color: var(--primary);
+  }
+
+  .tutorial-role-portrait img {
+    filter: saturate(0.72) brightness(0.62);
+    transform: scale(1.02);
+    transform-origin: 50% 20%;
+    transition:
+      filter 150ms cubic-bezier(0, 0, 0.2, 1),
+      transform 200ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .tutorial-role-card:hover .tutorial-role-portrait img {
+    filter: saturate(0.9) brightness(0.78);
+    transform: scale(1.055) translateY(-2px);
+  }
+
+  @media (min-width: 1024px) {
+    .tutorial-title {
+      font-size: clamp(2.75rem, 6dvh, 4.5rem);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .identity-title {
+      font-size: clamp(2.75rem, 5.8dvh, 4.5rem);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .veil-boot-sigil {
+    animation: veil-sigil-enter 400ms cubic-bezier(0, 0, 0.2, 1) both;
+  }
+
+  .veil-boot-ring {
+    animation: veil-ring-enter 400ms cubic-bezier(0, 0, 0.2, 1) both;
+  }
+
+  .veil-boot-progress {
+    transform-origin: left;
+    animation: veil-progress 1650ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .identity-roster img {
+    transform-origin: 50% 100%;
+    animation: identity-breathe 6s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+
+  .identity-moon-mark {
+    animation: identity-wolf-turn 32s linear infinite;
+  }
+
+  .identity-fog {
+    animation: identity-fog-drift 10s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+
+  .tutorial-role-card:nth-child(2) .tutorial-role-portrait {
+    animation-delay: -1.7s;
+  }
+
+  .tutorial-role-card:nth-child(3) .tutorial-role-portrait {
+    animation-delay: -3.4s;
+  }
+
+  .tutorial-role-portrait {
+    animation: tutorial-role-breathe 5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+}
+
+@keyframes veil-sigil-enter {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes veil-ring-enter {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes veil-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes identity-breathe {
+  from { transform: scale(1) translateY(0); }
+  to { transform: scale(1.012) translateY(-4px); }
+}
+
+@keyframes identity-wolf-turn {
+  from { transform: scale(1.1) rotate(0deg); }
+  to { transform: scale(1.1) rotate(360deg); }
+}
+
+@keyframes identity-fog-drift {
+  from { transform: translateX(-3%); opacity: 0.24; }
+  to { transform: translateX(6%); opacity: 0.38; }
+}
+
+@keyframes tutorial-role-breathe {
+  from { transform: translateY(0); }
+  to { transform: translateY(-4px); }
 }
 
 @keyframes onboarding-rule-reveal {
@@ -146,6 +443,31 @@
 
   .onboarding-rule-panel[data-visible="true"],
   .onboarding-rule-panel[data-visible="true"] li {
+    animation: none;
+  }
+
+  .veil-boot-progress {
+    width: 100%;
+  }
+
+  .ritual-enter,
+  .ritual-enter[data-visible="true"],
+  .identity-roster,
+  .identity-roster[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .identity-focus {
+    transition: none;
+  }
+
+  .identity-moon-mark {
+    animation: none;
+  }
+
+  .tutorial-role-portrait {
     animation: none;
   }
 }
