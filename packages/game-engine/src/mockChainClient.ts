@@ -242,7 +242,7 @@ async function delay(ms = MOCK_LATENCY_MS): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function generateGameId(): string {
+export function generateGameId(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
   let id = "";
   for (let i = 0; i < 5; i++) {
@@ -297,9 +297,8 @@ export const mockChainClient: SimulationClient = {
     return { gameState: record.gameState };
   },
 
-  async createGame({ host, hostNickname }) {
+  async createGame({ gameId, host, hostNickname }) {
     await delay();
-    const gameId = generateGameId();
     const gameState = sm_createGame({ gameId, host, hostNickname });
     const privateState = createEmptyPrivateState(gameId, host);
     writeRecord(gameId, {

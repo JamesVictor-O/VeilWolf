@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { generateAddress, mockChainClient } from "./mockChainClient";
+import {
+  generateAddress,
+  generateGameId,
+  mockChainClient,
+} from "./mockChainClient";
 
 describe("mock simulation flow", () => {
   it("lets one human progress through a complete round with simulated players", async () => {
     const host = generateAddress();
     const { gameState: created } = await mockChainClient.createGame({
+      gameId: generateGameId(),
       host,
       hostNickname: "Host",
     });

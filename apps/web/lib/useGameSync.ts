@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getOrCreateAddress, getStoredNickname } from "./identity";
+import { getOrCreateMatchIdentity, getStoredNickname } from "./identity";
 import { useGameStore } from "./store";
 
 /**
@@ -24,14 +24,17 @@ export function useGameSync(gameId: string) {
       router.replace("/onboarding/nickname");
       return;
     }
-    const address = getOrCreateAddress();
-    setIdentity(address, nickname);
-
     let unsubscribe: (() => void) | undefined;
-    loadGame(gameId)
-      .then(() => setReady(true))
+    getOrCreateMatchIdentity(gameId)
+      .then((identity) => {
+        setIdentity(identity.address, nickname);
+        return loadGame(gameId);
+      })
+      .then(() => {
+        unsubscribe = subscribeToGame(gameId);
+        setReady(true);
+      })
       .catch(() => setReady(true));
-    unsubscribe = subscribeToGame(gameId);
 
     return () => unsubscribe?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps

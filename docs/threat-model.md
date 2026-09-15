@@ -94,28 +94,36 @@ The mock client is a local UX harness and is explicitly outside the production t
 
 ## Open blockers
 
-- Select and prove the role-assignment protocol. This blocks any claim of trustless gameplay.
+- Implement and benchmark the verifiable encrypted mixnet specified in
+  `docs/ROLE_ASSIGNMENT_PROTOCOL.md`. Its threshold and recovery policy block
+  any claim of trustless role assignment.
 - Decide whether night-action metadata needs a relayer/batcher to prevent sender and timing correlation.
 - Select browser private-state persistence and recovery design; the SDK's in-memory example is insufficient.
 - Define timeout-safe behavior when a special role never acts without revealing which role is absent.
+- Validate transaction guaranteed/fallible phase placement so a failed call cannot leave partial consequential state or enable DUST griefing.
+- Pin the official compatibility matrix across Compact, runtime, ledger, Midnight.js, wallet SDK, proof server, node, and indexer.
 
 ## Implemented privacy spike
 
-`packages/contracts/private-action.compact` now validates the narrow
-commitment/nullifier primitive independently of the playable mock:
+`packages/contracts/private-action.compact` now validates private roster
+membership and the action commitment/nullifier primitive independently of the
+playable mock:
 
-- role, target, nonce, and player secret are witness-only inputs;
+- player secret and roster nonce are committed into a private Merkle roster;
+- a join nullifier prevents one per-match secret from filling multiple seats;
+- the lobby freezes only when exactly nine private commitments exist;
+- night actions require a valid private path to the frozen roster root;
+- role, target, nonce, membership secret, and path are witness-only inputs;
 - a `persistentCommit` binds game, turn, role, target, and fresh nonce;
 - a separately domain-separated nullifier binds game, turn, and player secret;
 - repeated use of the same player secret in the same round is rejected;
 - only the commitment-tree growth, nullifier, and aggregate action count are public.
 
-This does **not** yet prove roster membership, assigned-role capability,
-target liveness, or the full dawn tally. Those remain explicit blockers and
-must be composed into the final circuit before the playable client can make a
-trustless-gameplay claim.
-- Validate transaction guaranteed/fallible phase placement so a failed call cannot leave partial consequential state or enable DUST griefing.
-- Pin the official compatibility matrix across Compact, runtime, ledger, Midnight.js, wallet SDK, proof server, node, and indexer.
+This does **not** yet prove invite uniqueness, assigned-role capability, target
+liveness, or the full dawn tally. Those remain explicit blockers and must be
+composed into the final circuit before the playable client can make a
+trustless-gameplay claim. In particular, a join nullifier prevents duplicate
+use of one secret; it does not stop one human from generating several secrets.
 
 ## Release gates
 

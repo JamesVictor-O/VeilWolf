@@ -96,10 +96,14 @@ When it's time to wire in the real Midnight Compact TS SDK:
    hasn't been validated against a real `compactc` — treat it as a spec
    to check against the current language docs, not working source.
    **`packages/contracts/private-action.compact`** is working source: it
-   compiles with Compact compiler 0.34.0 / language 0.26, keeps the role and
-   target in a witness, stores a randomized commitment, and rejects reuse via
-   a round-scoped nullifier. Its simulator tests cover valid submission,
-   duplicate action, invalid role, empty target, and closed-night rejection.
+   compiles with Compact compiler 0.34.0 / language 0.26, builds a nine-seat
+   private Merkle roster, requires membership proofs for night actions, keeps
+   role and target in witnesses, and rejects reuse with domain-separated join
+   and action nullifiers. Its simulator tests cover roster privacy/freezing,
+   duplicate joins, non-member actions, valid submission, invalid role, empty
+   target, duplicate action, and closed-night rejection. The selected role
+   protocol and its unresolved threshold tradeoff are documented in
+   `docs/ROLE_ASSIGNMENT_PROTOCOL.md`.
 2. **Replace `mockChainClient.ts`.** Nothing else should need to change.
    `apps/web` and `packages/ui` only ever import the `ChainClient`
    interface and `useGameStore` (`apps/web/lib/store.ts`) — never

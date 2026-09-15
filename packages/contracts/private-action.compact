@@ -1,23 +1,43 @@
 // VeilWolf private-action spike
 //
-// This is the first compiler-enforced privacy slice. It deliberately does not
-// claim to solve role assignment or anonymous player membership yet. It proves
-// three smaller properties that the full game contract will compose later:
+// This compiler-enforced privacy slice implements anonymous roster membership
+// and private night-action commitments. It deliberately does not claim to
+// solve role assignment yet. It proves these properties:
 //
-// 1. role, target, player secret, and nonce enter through a private witness;
-// 2. only a randomized action commitment reaches the public commitment tree;
-// 3. a round-scoped nullifier prevents the same secret acting twice.
+// 1. each seat is a hidden, randomized commitment in a Merkle tree;
+// 2. a join nullifier stops one per-match secret occupying multiple seats;
+// 3. night actions require a private Merkle-membership proof;
+// 4. only a randomized action commitment reaches the public action tree;
+// 5. a round-scoped nullifier prevents the same secret acting twice.
 
 pragma language_version >= 0.26;
 
 import CompactStandardLibrary;
 
-export enum ActionPhase { Night, Closed }
+export enum ActionPhase { Lobby, Night, Closed }
+
+struct PrivatePlayer {
+  playerSecret: Bytes<32>;
+  rosterNonce: Bytes<32>;
+}
 
 struct PrivateNightAction {
   role: Uint<8>;
   target: Bytes<32>;
   nonce: Bytes<32>;
+  playerSecret: Bytes<32>;
+  rosterNonce: Bytes<32>;
+}
+
+struct RosterPayload {
+  domain: Bytes<32>;
+  gameId: Bytes<32>;
+  playerSecret: Bytes<32>;
+}
+
+struct JoinNullifierPayload {
+  domain: Bytes<32>;
+  gameId: Bytes<32>;
   playerSecret: Bytes<32>;
 }
 
@@ -39,15 +59,70 @@ struct NullifierPayload {
 export ledger gameId: Bytes<32>;
 export ledger turn: Uint<32>;
 export ledger phase: ActionPhase;
+export ledger rosterSize: Uint<8>;
+export ledger rosterCommitments: MerkleTree<10, Bytes<32>>;
+export ledger rosterJoinNullifiers: Set<Bytes<32>>;
 export ledger actionCommitments: MerkleTree<10, Bytes<32>>;
 export ledger actionNullifiers: Set<Bytes<32>>;
 export ledger acceptedActionCount: Counter;
 
+witness privatePlayer(): PrivatePlayer;
 witness privateNightAction(): PrivateNightAction;
+witness rosterPath(commitment: Bytes<32>): MerkleTreePath<10, Bytes<32>>;
 
 constructor(initialGameId: Bytes<32>) {
   gameId = disclose(initialGameId);
   turn = 1;
+  phase = ActionPhase.Lobby;
+  rosterSize = 0;
+}
+
+pure circuit rosterCommitment(
+  playerSecret: Bytes<32>,
+  rosterNonce: Bytes<32>,
+  matchId: Bytes<32>
+): Bytes<32> {
+  const payload = RosterPayload {
+    domain: pad(32, "veilwolf:roster-member:v1"),
+    gameId: matchId,
+    playerSecret: playerSecret,
+  };
+  return persistentCommit<RosterPayload>(payload, rosterNonce);
+}
+
+export circuit joinPrivateRoster(): [] {
+  assert(phase == ActionPhase.Lobby, "roster is frozen");
+  assert(rosterSize < 9, "roster is full");
+
+  const player = privatePlayer();
+  assert(player.playerSecret != default<Bytes<32>>, "player secret cannot be empty");
+  assert(player.rosterNonce != default<Bytes<32>>, "roster nonce cannot be empty");
+
+  const commitment = rosterCommitment(
+    player.playerSecret,
+    player.rosterNonce,
+    gameId
+  );
+  const joinNullifier = persistentHash<JoinNullifierPayload>(
+    JoinNullifierPayload {
+      domain: pad(32, "veilwolf:roster-join-null:v1"),
+      gameId: gameId,
+      playerSecret: player.playerSecret,
+    }
+  );
+
+  assert(
+    !rosterJoinNullifiers.member(disclose(joinNullifier)),
+    "player already joined"
+  );
+  rosterJoinNullifiers.insert(disclose(joinNullifier));
+  rosterCommitments.insert(commitment);
+  rosterSize = disclose((rosterSize + 1) as Uint<8>);
+}
+
+export circuit startNight(): [] {
+  assert(phase == ActionPhase.Lobby, "roster is already frozen");
+  assert(rosterSize == 9, "nine players are required");
   phase = ActionPhase.Night;
 }
 
@@ -57,6 +132,19 @@ export circuit submitPrivateNightAction(): [] {
   const action = privateNightAction();
   assert(action.role >= 1 && action.role <= 3, "role cannot act at night");
   assert(action.target != default<Bytes<32>>, "target cannot be empty");
+
+  const memberCommitment = rosterCommitment(
+    action.playerSecret,
+    action.rosterNonce,
+    gameId
+  );
+  const memberPath = rosterPath(memberCommitment);
+  assert(
+    rosterCommitments.checkRoot(
+      disclose(merkleTreePathRoot<10, Bytes<32>>(memberPath))
+    ),
+    "not a roster member"
+  );
 
   const payload = ActionPayload {
     domain: pad(32, "veilwolf:night-action:v1"),

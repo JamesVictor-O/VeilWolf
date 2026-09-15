@@ -195,7 +195,13 @@ This is the first protocol spike, not a later detail. The scheme must guarantee:
 - selective teammate knowledge is possible for wolves;
 - end-game reveal can be verified when enabled.
 
-Evaluate commit–reveal with penalties/timeouts, chain randomness combined with player entropy, and an off-chain mental-poker/shuffle protocol anchored on-chain. Select only after threat modeling and proof benchmarks. Do not market “trustless roles” before this spike passes.
+The selected candidate is the verifiable encrypted mixnet described in
+`docs/ROLE_ASSIGNMENT_PROTOCOL.md`: a canonical encrypted role deck is
+sequentially shuffled and rerandomized with proofs, then opened only to each
+recipient. Public-seed/index assignment was rejected because observable join
+order can reveal the complete role map. The mixnet remains behind proof-speed,
+key-switching, threshold, abort-recovery, and transcript-privacy gates. Do not
+market “trustless roles” before those gates pass.
 
 ## 6. Security and privacy threat model
 

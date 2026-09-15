@@ -23,6 +23,7 @@ export interface TransactionProgress {
 }
 export interface ChainClient {
   createGame(params: {
+    gameId: string;
     host: Address;
     hostNickname: string;
   }): Promise<{ gameState: GameState; privateState: PrivateState }>;

@@ -15,8 +15,10 @@ import {
   type DayLogEntry,
   type GameState,
   type PrivateState,
+  generateGameId,
 } from "@veilwolf/game-engine";
 import { chainClient } from "@/lib/chainClient";
+import { getOrCreateMatchIdentity } from "@/lib/identity";
 
 interface GameStore {
   address: Address | null;
@@ -98,26 +100,30 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   createGame: () =>
     run(set, async () => {
-      const { address, nickname } = get();
-      if (!address || !nickname) throw new Error("Set your nickname first");
+      const { nickname } = get();
+      if (!nickname) throw new Error("Set your nickname first");
+      const gameId = generateGameId();
+      const identity = await getOrCreateMatchIdentity(gameId);
       const { gameState, privateState } = await chainClient.createGame({
-        host: address,
+        gameId,
+        host: identity.address,
         hostNickname: nickname,
       });
-      set({ gameState, privateState });
+      set({ address: identity.address, gameState, privateState });
       return gameState.gameId;
     }),
 
   joinGame: (gameId) =>
     run(set, async () => {
-      const { address, nickname } = get();
-      if (!address || !nickname) throw new Error("Set your nickname first");
+      const { nickname } = get();
+      if (!nickname) throw new Error("Set your nickname first");
+      const identity = await getOrCreateMatchIdentity(gameId);
       const { gameState, privateState } = await chainClient.joinGame({
         gameId,
-        address,
+        address: identity.address,
         nickname,
       });
-      set({ gameState, privateState });
+      set({ address: identity.address, gameState, privateState });
     }),
 
   fillWithSimulatedPlayers: () =>
