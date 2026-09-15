@@ -1,6 +1,8 @@
 # VeilWolf Private Role Assignment Protocol
 
-Status: protocol design and feasibility gate; not yet implemented
+Status: staged implementation; private roster and anonymous assignment-key
+registration are implemented, while the encrypted shuffle and role opening
+remain behind the feasibility gate
 
 ## Objective
 
@@ -139,17 +141,21 @@ recovery.
 
 ## Compact implementation plan
 
-1. Keep the implemented `rosterCommitments` Merkle tree and join nullifiers.
-2. Add immutable ruleset hash and a frozen roster-root snapshot.
-3. Prototype the encrypted-card representation with Compact elliptic-curve
+1. ✅ Keep the implemented `rosterCommitments` Merkle tree and join nullifiers.
+2. ✅ Freeze an exact nine-member roster into a distinct assignment phase.
+3. ✅ Require each member to anonymously register exactly one randomized,
+   match-scoped encryption-key commitment before night can begin.
+4. Add an immutable ruleset hash and bind a frozen roster-root snapshot into
+   every assignment transcript.
+5. Prototype the encrypted-card representation with Compact elliptic-curve
    primitives and benchmark one nine-card shuffle proof.
-4. Implement deck-step nullifiers and previous-root binding.
-5. Prototype recipient-scoped key switching and benchmark nine openings.
-6. Implement the private role credential and connect it to
+6. Implement deck-step nullifiers and previous-root binding.
+7. Prototype recipient-scoped key switching and benchmark nine openings.
+8. Implement the private role credential and connect it to
    `submitPrivateNightAction`.
-7. Inspect the public transcript and indexer output for role, position, leaf,
+9. Inspect the public transcript and indexer output for role, position, leaf,
    target, and cross-purpose-linkage leakage.
-8. Run malicious-host, collusion, abort, replay, and recovery test suites.
+10. Run malicious-host, collusion, abort, replay, and recovery test suites.
 
 ## Feasibility gates
 

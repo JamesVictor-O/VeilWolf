@@ -6,15 +6,17 @@
 //
 // 1. each seat is a hidden, randomized commitment in a Merkle tree;
 // 2. a join nullifier stops one per-match secret occupying multiple seats;
-// 3. night actions require a private Merkle-membership proof;
-// 4. only a randomized action commitment reaches the public action tree;
-// 5. a round-scoped nullifier prevents the same secret acting twice.
+// 3. the full roster freezes into a separate assignment phase;
+// 4. every member registers exactly one hidden assignment-key commitment;
+// 5. night actions require a private Merkle-membership proof;
+// 6. only a randomized action commitment reaches the public action tree;
+// 7. a round-scoped nullifier prevents the same secret acting twice.
 
 pragma language_version >= 0.26;
 
 import CompactStandardLibrary;
 
-export enum ActionPhase { Lobby, Night, Closed }
+export enum ActionPhase { Lobby, Assignment, Night, Closed }
 
 struct PrivatePlayer {
   playerSecret: Bytes<32>;
@@ -27,6 +29,25 @@ struct PrivateNightAction {
   nonce: Bytes<32>;
   playerSecret: Bytes<32>;
   rosterNonce: Bytes<32>;
+}
+
+struct PrivateAssignmentKey {
+  playerSecret: Bytes<32>;
+  rosterNonce: Bytes<32>;
+  encryptionPublicKey: Bytes<32>;
+  keyNonce: Bytes<32>;
+}
+
+struct AssignmentKeyPayload {
+  domain: Bytes<32>;
+  gameId: Bytes<32>;
+  encryptionPublicKey: Bytes<32>;
+}
+
+struct AssignmentNullifierPayload {
+  domain: Bytes<32>;
+  gameId: Bytes<32>;
+  playerSecret: Bytes<32>;
 }
 
 struct RosterPayload {
@@ -62,11 +83,15 @@ export ledger phase: ActionPhase;
 export ledger rosterSize: Uint<8>;
 export ledger rosterCommitments: MerkleTree<10, Bytes<32>>;
 export ledger rosterJoinNullifiers: Set<Bytes<32>>;
+export ledger assignmentKeyCommitments: MerkleTree<10, Bytes<32>>;
+export ledger assignmentNullifiers: Set<Bytes<32>>;
+export ledger assignmentKeyCount: Uint<8>;
 export ledger actionCommitments: MerkleTree<10, Bytes<32>>;
 export ledger actionNullifiers: Set<Bytes<32>>;
 export ledger acceptedActionCount: Counter;
 
 witness privatePlayer(): PrivatePlayer;
+witness privateAssignmentKey(): PrivateAssignmentKey;
 witness privateNightAction(): PrivateNightAction;
 witness rosterPath(commitment: Bytes<32>): MerkleTreePath<10, Bytes<32>>;
 
@@ -75,6 +100,7 @@ constructor(initialGameId: Bytes<32>) {
   turn = 1;
   phase = ActionPhase.Lobby;
   rosterSize = 0;
+  assignmentKeyCount = 0;
 }
 
 pure circuit rosterCommitment(
@@ -120,9 +146,63 @@ export circuit joinPrivateRoster(): [] {
   rosterSize = disclose((rosterSize + 1) as Uint<8>);
 }
 
-export circuit startNight(): [] {
+export circuit beginRoleAssignment(): [] {
   assert(phase == ActionPhase.Lobby, "roster is already frozen");
   assert(rosterSize == 9, "nine players are required");
+  phase = ActionPhase.Assignment;
+}
+
+export circuit registerAssignmentKey(): [] {
+  assert(phase == ActionPhase.Assignment, "assignment registration is closed");
+
+  const participant = privateAssignmentKey();
+  assert(
+    participant.encryptionPublicKey != default<Bytes<32>>,
+    "encryption public key cannot be empty"
+  );
+  assert(participant.keyNonce != default<Bytes<32>>, "key nonce cannot be empty");
+
+  const memberCommitment = rosterCommitment(
+    participant.playerSecret,
+    participant.rosterNonce,
+    gameId
+  );
+  const memberPath = rosterPath(memberCommitment);
+  assert(
+    rosterCommitments.checkRoot(
+      disclose(merkleTreePathRoot<10, Bytes<32>>(memberPath))
+    ),
+    "not a roster member"
+  );
+
+  const nullifier = persistentHash<AssignmentNullifierPayload>(
+    AssignmentNullifierPayload {
+      domain: pad(32, "veilwolf:assign-key-null:v1"),
+      gameId: gameId,
+      playerSecret: participant.playerSecret,
+    }
+  );
+  assert(
+    !assignmentNullifiers.member(disclose(nullifier)),
+    "assignment key already registered"
+  );
+
+  const keyCommitment = persistentCommit<AssignmentKeyPayload>(
+    AssignmentKeyPayload {
+      domain: pad(32, "veilwolf:assign-key:v1"),
+      gameId: gameId,
+      encryptionPublicKey: participant.encryptionPublicKey,
+    },
+    participant.keyNonce
+  );
+  assignmentNullifiers.insert(disclose(nullifier));
+  assignmentKeyCommitments.insert(keyCommitment);
+  assignmentKeyCount = disclose((assignmentKeyCount + 1) as Uint<8>);
+}
+
+export circuit startNight(): [] {
+  assert(phase == ActionPhase.Assignment, "role assignment is not active");
+  assert(assignmentKeyCount == 9, "nine assignment keys are required");
   phase = ActionPhase.Night;
 }
 

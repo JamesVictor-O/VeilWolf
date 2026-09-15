@@ -22,8 +22,15 @@ interface NightActionWitness extends PlayerWitness {
   nonce: Uint8Array;
 }
 
+interface AssignmentKeyWitness extends PlayerWitness {
+  encryptionPublicKey: Uint8Array;
+  keyNonce: Uint8Array;
+}
+
 type CircuitName =
   | "joinPrivateRoster"
+  | "beginRoleAssignment"
+  | "registerAssignmentKey"
   | "startNight"
   | "submitPrivateNightAction"
   | "closeNight";
@@ -42,15 +49,23 @@ function actionFor(member: PlayerWitness): NightActionWitness {
   return { ...member, role: 1n, target: bytes(240), nonce: bytes(241) };
 }
 
+function assignmentKeyFor(member: PlayerWitness, value: number): AssignmentKeyWitness {
+  return { ...member, encryptionPublicKey: bytes(value + 64), keyNonce: bytes(value + 96) };
+}
+
 async function setup() {
   let currentPlayer = player(1);
   let currentAction = actionFor(currentPlayer);
+  let currentAssignmentKey = assignmentKeyFor(currentPlayer, 1);
   const contract = new Contract<Record<string, never>>({
     privatePlayer(context) {
       return [context.privateState, currentPlayer];
     },
     privateNightAction(context) {
       return [context.privateState, currentAction];
+    },
+    privateAssignmentKey(context) {
+      return [context.privateState, currentAssignmentKey];
     },
     rosterPath(context, commitment) {
       const path =
@@ -87,6 +102,9 @@ async function setup() {
     execute,
     readLedger: (): Ledger => ledger(currentState),
     setPlayer,
+    setAssignmentKey: (next: AssignmentKeyWitness) => {
+      currentAssignmentKey = next;
+    },
     setAction: (next: NightActionWitness) => {
       currentAction = next;
     },
@@ -98,6 +116,22 @@ async function setup() {
         setPlayer(member);
         await execute("joinPrivateRoster");
       }
+      return members;
+    },
+    prepareNight: async () => {
+      const members: PlayerWitness[] = [];
+      for (let index = 1; index <= 9; index += 1) {
+        const member = player(index);
+        members.push(member);
+        setPlayer(member);
+        await execute("joinPrivateRoster");
+      }
+      await execute("beginRoleAssignment");
+      for (let index = 0; index < members.length; index += 1) {
+        currentAssignmentKey = assignmentKeyFor(members[index]!, index + 1);
+        await execute("registerAssignmentKey");
+      }
+      await execute("startNight");
       return members;
     },
   };
@@ -132,12 +166,12 @@ describe("private roster Compact circuit", () => {
 
   it("freezes only a complete nine-player roster", async () => {
     const spike = await setup();
-    await expect(spike.execute("startNight")).rejects.toThrow(
+    await expect(spike.execute("beginRoleAssignment")).rejects.toThrow(
       "nine players are required",
     );
     await spike.fillRoster();
-    const state = await spike.execute("startNight");
-    expect(state.phase).toBe(ActionPhase.Night);
+    const state = await spike.execute("beginRoleAssignment");
+    expect(state.phase).toBe(ActionPhase.Assignment);
 
     spike.setPlayer(player(10));
     await expect(spike.execute("joinPrivateRoster")).rejects.toThrow(
@@ -164,11 +198,58 @@ describe("private roster Compact circuit", () => {
   });
 });
 
+describe("private role-assignment registration", () => {
+  it("requires all nine anonymous members to register one hidden key", async () => {
+    const spike = await setup();
+    const members = await spike.fillRoster();
+    await spike.execute("beginRoleAssignment");
+
+    await expect(spike.execute("startNight")).rejects.toThrow(
+      "nine assignment keys are required",
+    );
+    for (let index = 0; index < members.length; index += 1) {
+      spike.setAssignmentKey(assignmentKeyFor(members[index]!, index + 1));
+      await spike.execute("registerAssignmentKey");
+    }
+    const registered = spike.readLedger();
+    expect(registered.assignmentKeyCount).toBe(9n);
+    expect(registered.assignmentKeyCommitments.firstFree()).toBe(9n);
+    expect(registered.assignmentNullifiers.size()).toBe(9n);
+    expect((await spike.execute("startNight")).phase).toBe(ActionPhase.Night);
+  });
+
+  it("rejects duplicate and non-member assignment registrations", async () => {
+    const spike = await setup();
+    const members = await spike.fillRoster();
+    await spike.execute("beginRoleAssignment");
+    spike.setAssignmentKey(assignmentKeyFor(members[0]!, 1));
+    await spike.execute("registerAssignmentKey");
+    spike.setAssignmentKey(assignmentKeyFor(members[0]!, 2));
+    await expect(spike.execute("registerAssignmentKey")).rejects.toThrow(
+      "assignment key already registered",
+    );
+    spike.setAssignmentKey(assignmentKeyFor(player(20), 3));
+    await expect(spike.execute("registerAssignmentKey")).rejects.toThrow(
+      "not a roster member",
+    );
+  });
+
+  it.each([
+    ["an empty encryption key", bytes(0), bytes(2), "encryption public key cannot be empty"],
+    ["an empty key nonce", bytes(2), bytes(0), "key nonce cannot be empty"],
+  ])("rejects %s", async (_case, encryptionPublicKey, keyNonce, message) => {
+    const spike = await setup();
+    const members = await spike.fillRoster();
+    await spike.execute("beginRoleAssignment");
+    spike.setAssignmentKey({ ...members[0]!, encryptionPublicKey, keyNonce });
+    await expect(spike.execute("registerAssignmentKey")).rejects.toThrow(message);
+  });
+});
+
 describe("member-authorized private night-action circuit", () => {
   it("accepts a private action backed by a roster membership proof", async () => {
     const spike = await setup();
-    const members = await spike.fillRoster();
-    await spike.execute("startNight");
+    const members = await spike.prepareNight();
     spike.setAction(actionFor(members[0]!));
     const state = await spike.execute("submitPrivateNightAction");
 
@@ -181,8 +262,7 @@ describe("member-authorized private night-action circuit", () => {
 
   it("rejects a secret that is not in the frozen roster", async () => {
     const spike = await setup();
-    await spike.fillRoster();
-    await spike.execute("startNight");
+    await spike.prepareNight();
     spike.setAction(actionFor(player(20)));
 
     await expect(spike.execute("submitPrivateNightAction")).rejects.toThrow(
@@ -192,8 +272,7 @@ describe("member-authorized private night-action circuit", () => {
 
   it("rejects a second action from the same member in the same round", async () => {
     const spike = await setup();
-    const members = await spike.fillRoster();
-    await spike.execute("startNight");
+    const members = await spike.prepareNight();
     spike.setAction(actionFor(members[0]!));
     await spike.execute("submitPrivateNightAction");
     spike.setAction({ ...actionFor(members[0]!), target: bytes(5), nonce: bytes(6) });
@@ -209,16 +288,14 @@ describe("member-authorized private night-action circuit", () => {
     ["an empty target", 1n, bytes(0), "target cannot be empty"],
   ])("rejects %s", async (_case, role, target, message) => {
     const spike = await setup();
-    const members = await spike.fillRoster();
-    await spike.execute("startNight");
+    const members = await spike.prepareNight();
     spike.setAction({ ...actionFor(members[0]!), role, target });
     await expect(spike.execute("submitPrivateNightAction")).rejects.toThrow(message);
   });
 
   it("rejects actions after night is closed", async () => {
     const spike = await setup();
-    const members = await spike.fillRoster();
-    await spike.execute("startNight");
+    const members = await spike.prepareNight();
     spike.setAction(actionFor(members[0]!));
     const closed = await spike.execute("closeNight");
     expect(closed.phase).toBe(ActionPhase.Closed);
