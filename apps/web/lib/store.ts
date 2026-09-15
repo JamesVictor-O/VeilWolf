@@ -34,6 +34,7 @@ interface GameStore {
 
   createGame: () => Promise<string>;
   joinGame: (gameId: string) => Promise<void>;
+  fillWithSimulatedPlayers: () => Promise<void>;
   startGame: () => Promise<void>;
   submitNightAction: (target: Address) => Promise<void>;
   resolveDawn: () => Promise<void>;
@@ -117,6 +118,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
         nickname,
       });
       set({ gameState, privateState });
+    }),
+
+  fillWithSimulatedPlayers: () =>
+    run(set, async () => {
+      const { address, gameState } = get();
+      if (!address || !gameState) return;
+      const { gameState: next } = await chainClient.fillWithSimulatedPlayers({
+        gameId: gameState.gameId,
+        actor: address,
+      });
+      set({ gameState: next });
     }),
 
   startGame: () =>

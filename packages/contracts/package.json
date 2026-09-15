@@ -2,11 +2,16 @@
   "name": "@veilwolf/contracts",
   "version": "0.1.0",
   "private": true,
-  "description": "Compact contract source for VeilWolf. Not compiled yet — this package is a placeholder for the compactc build output and generated TS bindings once the real chain integration starts.",
+  "description": "Compact contracts and privacy spikes for VeilWolf.",
   "scripts": {
-    "lint": "echo \"[contracts] nothing to lint yet — compactc not wired in\"",
-    "typecheck": "echo \"[contracts] nothing to typecheck yet — compactc not wired in\"",
-    "test": "echo \"[contracts] no contract tests yet\"",
+    "compile": "compact compile --skip-zk private-action.compact managed/private-action",
+    "lint": "pnpm run compile",
+    "typecheck": "pnpm run compile",
+    "test": "pnpm run compile && vitest run private-action.test.ts",
     "clean": "rm -rf dist .turbo managed"
+  },
+  "devDependencies": {
+    "@midnight-ntwrk/compact-runtime": "0.19.0",
+    "vitest": "2.1.9"
   }
 }

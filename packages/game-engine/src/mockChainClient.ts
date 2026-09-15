@@ -26,6 +26,7 @@
 
 import {
   createEmptyPrivateState,
+  MIN_PLAYERS,
   type Address,
   type DayLogEntry,
   type GameState,
@@ -45,7 +46,7 @@ import {
   submitNightAction as sm_submitNightAction,
   submitVote as sm_submitVote,
 } from "./stateMachine";
-import type { ChainClient } from "./chainClient";
+import type { SimulationClient } from "./chainClient";
 
 // ---------------------------------------------------------------------------
 // Storage abstraction — localStorage in the browser, in-memory for Node/tests
@@ -129,6 +130,113 @@ function requireRecord(gameId: string): GameRecord {
 // Simulates network + proof-generation latency so loading states in the UI
 // have something real to render against. Tune to zero for tests.
 const MOCK_LATENCY_MS = 250;
+const SIMULATED_PLAYER_NAMES = [
+  "Agnes",
+  "Bram",
+  "Celia",
+  "Dorian",
+  "Elara",
+  "Felix",
+  "Greta",
+  "Hollis",
+] as const;
+
+function isSimulatedPlayer(address: Address): boolean {
+  return address.startsWith("simulated:");
+}
+
+function runSimulatedNightActions(record: GameRecord): GameRecord {
+  let next = record;
+  const actors = next.gameState.players.filter(
+    (player) =>
+      player.isAlive &&
+      isSimulatedPlayer(player.address) &&
+      !player.hasActedThisNight &&
+      next.roleAssignments[player.address] !== "VILLAGER",
+  );
+
+  for (const actor of actors) {
+    const role = next.roleAssignments[actor.address];
+    const privateState = next.privateStates[actor.address];
+    if (!role || !privateState) continue;
+
+    const alive = next.gameState.players.filter((player) => player.isAlive);
+    let eligible = alive.filter((player) => player.address !== actor.address);
+    if (role === "WEREWOLF") {
+      eligible = eligible.filter(
+        (player) => next.roleAssignments[player.address] !== "WEREWOLF",
+      );
+    }
+    if (role === "DOCTOR" && next.gameState.turnNumber > 1) {
+      const previousTarget = [...privateState.nightActionsHistory]
+        .reverse()
+        .find((action) => action.actor === actor.address)?.target;
+      eligible = eligible.filter((player) => player.address !== previousTarget);
+    }
+
+    const target =
+      eligible.find((player) => isSimulatedPlayer(player.address)) ?? eligible[0];
+    if (!target) continue;
+
+    const action: NightAction = { actor: actor.address, role, target: target.address };
+    const result = sm_submitNightAction(
+      next.gameState,
+      next.pendingNightActions,
+      action,
+      next.roleAssignments,
+      privateState.nightActionsHistory,
+    );
+    next = {
+      ...next,
+      gameState: result.gameState,
+      pendingNightActions: result.pendingActions,
+      privateStates: {
+        ...next.privateStates,
+        [actor.address]: {
+          ...privateState,
+          nightActionsHistory: [...privateState.nightActionsHistory, action],
+        },
+      },
+    };
+  }
+
+  return next;
+}
+
+function runSimulatedVotes(record: GameRecord): GameRecord {
+  let next = record;
+  const simulatedTarget = next.gameState.players.find(
+    (player) => player.isAlive && isSimulatedPlayer(player.address),
+  );
+  if (!simulatedTarget) return next;
+
+  for (const voter of next.gameState.players.filter(
+    (player) =>
+      player.isAlive &&
+      isSimulatedPlayer(player.address) &&
+      !player.hasVotedThisRound,
+  )) {
+    const fallback = next.gameState.players.find(
+      (player) => player.isAlive && player.address !== voter.address,
+    );
+    const target =
+      simulatedTarget.address === voter.address ? fallback : simulatedTarget;
+    if (!target) continue;
+    const result = sm_submitVote(
+      next.gameState,
+      next.pendingVotes,
+      voter.address,
+      target.address,
+    );
+    next = {
+      ...next,
+      gameState: result.gameState,
+      pendingVotes: result.pendingVotes,
+    };
+  }
+
+  return next;
+}
 async function delay(ms = MOCK_LATENCY_MS): Promise<void> {
   if (ms <= 0) return;
   await new Promise((resolve) => setTimeout(resolve, ms));
@@ -159,7 +267,36 @@ export function generateAddress(): Address {
 // Implementation
 // ---------------------------------------------------------------------------
 
-export const mockChainClient: ChainClient = {
+export const mockChainClient: SimulationClient = {
+  async fillWithSimulatedPlayers({ gameId, actor }) {
+    await delay();
+    let record = requireRecord(gameId);
+    if (record.gameState.phase !== "SETUP") {
+      throw new Error("Simulated players can only join before the game starts");
+    }
+    if (record.gameState.host !== actor) {
+      throw new Error("Only the host can add simulated players");
+    }
+
+    let index = 0;
+    while (record.gameState.players.length < MIN_PLAYERS) {
+      const nickname = SIMULATED_PLAYER_NAMES[index] ?? `Guest ${index + 1}`;
+      const address = `simulated:${gameId}:${index + 1}`;
+      const gameState = sm_joinGame(record.gameState, { address, nickname });
+      record = {
+        ...record,
+        gameState,
+        privateStates: {
+          ...record.privateStates,
+          [address]: createEmptyPrivateState(gameId, address),
+        },
+      };
+      index += 1;
+    }
+    writeRecord(gameId, record);
+    return { gameState: record.gameState };
+  },
+
   async createGame({ host, hostNickname }) {
     await delay();
     const gameId = generateGameId();
@@ -199,14 +336,15 @@ export const mockChainClient: ChainClient = {
     for (const [address, ps] of Object.entries(record.privateStates)) {
       privateStates[address] = { ...ps, role: roleAssignments[address] ?? null };
     }
-    writeRecord(gameId, {
+    const nextRecord = runSimulatedNightActions({
       ...record,
       gameState,
       roleAssignments,
       pendingNightActions: [],
       privateStates,
     });
-    return { gameState };
+    writeRecord(gameId, nextRecord);
+    return { gameState: nextRecord.gameState };
   },
 
   async submitNightAction({ gameId, actor, target }) {
@@ -300,8 +438,13 @@ export const mockChainClient: ChainClient = {
     await delay();
     const record = requireRecord(gameId);
     const gameState = sm_advanceToVote(record.gameState);
-    writeRecord(gameId, { ...record, gameState, pendingVotes: {} });
-    return { gameState };
+    const nextRecord = runSimulatedVotes({
+      ...record,
+      gameState,
+      pendingVotes: {},
+    });
+    writeRecord(gameId, nextRecord);
+    return { gameState: nextRecord.gameState };
   },
 
   async submitVote({ gameId, voter, target }) {
@@ -330,13 +473,17 @@ export const mockChainClient: ChainClient = {
       roundContext,
       record.roleAssignments,
     );
-    writeRecord(gameId, {
+    let nextRecord: GameRecord = {
       ...record,
       gameState,
       pendingVotes: {},
       lastNightResult: null,
-    });
-    return { gameState };
+    };
+    if (gameState.phase === "NIGHT") {
+      nextRecord = runSimulatedNightActions(nextRecord);
+    }
+    writeRecord(gameId, nextRecord);
+    return { gameState: nextRecord.gameState };
   },
 
   async getGameState(gameId) {

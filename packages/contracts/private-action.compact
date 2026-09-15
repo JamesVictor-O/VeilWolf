@@ -1,0 +1,87 @@
+// VeilWolf private-action spike
+//
+// This is the first compiler-enforced privacy slice. It deliberately does not
+// claim to solve role assignment or anonymous player membership yet. It proves
+// three smaller properties that the full game contract will compose later:
+//
+// 1. role, target, player secret, and nonce enter through a private witness;
+// 2. only a randomized action commitment reaches the public commitment tree;
+// 3. a round-scoped nullifier prevents the same secret acting twice.
+
+pragma language_version >= 0.26;
+
+import CompactStandardLibrary;
+
+export enum ActionPhase { Night, Closed }
+
+struct PrivateNightAction {
+  role: Uint<8>;
+  target: Bytes<32>;
+  nonce: Bytes<32>;
+  playerSecret: Bytes<32>;
+}
+
+struct ActionPayload {
+  domain: Bytes<32>;
+  gameId: Bytes<32>;
+  turn: Uint<32>;
+  role: Uint<8>;
+  target: Bytes<32>;
+}
+
+struct NullifierPayload {
+  domain: Bytes<32>;
+  gameId: Bytes<32>;
+  turn: Uint<32>;
+  playerSecret: Bytes<32>;
+}
+
+export ledger gameId: Bytes<32>;
+export ledger turn: Uint<32>;
+export ledger phase: ActionPhase;
+export ledger actionCommitments: MerkleTree<10, Bytes<32>>;
+export ledger actionNullifiers: Set<Bytes<32>>;
+export ledger acceptedActionCount: Counter;
+
+witness privateNightAction(): PrivateNightAction;
+
+constructor(initialGameId: Bytes<32>) {
+  gameId = disclose(initialGameId);
+  turn = 1;
+  phase = ActionPhase.Night;
+}
+
+export circuit submitPrivateNightAction(): [] {
+  assert(phase == ActionPhase.Night, "night actions are closed");
+
+  const action = privateNightAction();
+  assert(action.role >= 1 && action.role <= 3, "role cannot act at night");
+  assert(action.target != default<Bytes<32>>, "target cannot be empty");
+
+  const payload = ActionPayload {
+    domain: pad(32, "veilwolf:night-action:v1"),
+    gameId: gameId,
+    turn: turn,
+    role: action.role,
+    target: action.target,
+  };
+  const commitment = persistentCommit<ActionPayload>(payload, action.nonce);
+
+  const nullifierPayload = NullifierPayload {
+    domain: pad(32, "veilwolf:night-nullifier:v1"),
+    gameId: gameId,
+    turn: turn,
+    playerSecret: action.playerSecret,
+  };
+  const nullifier = persistentHash<NullifierPayload>(nullifierPayload);
+
+  assert(!actionNullifiers.member(disclose(nullifier)), "already acted this turn");
+  actionNullifiers.insert(disclose(nullifier));
+  actionCommitments.insert(disclose(commitment));
+  acceptedActionCount.increment(1);
+}
+
+export circuit closeNight(): [] {
+  assert(phase == ActionPhase.Night, "night is already closed");
+  phase = ActionPhase.Closed;
+}

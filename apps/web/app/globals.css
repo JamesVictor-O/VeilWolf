@@ -90,4 +90,62 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .onboarding-enter {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  .onboarding-enter[data-visible="true"] {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      opacity 300ms cubic-bezier(0, 0, 0.2, 1),
+      transform 300ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .onboarding-rule-panel[data-visible="true"] {
+    animation: onboarding-rule-reveal 300ms cubic-bezier(0, 0, 0.2, 1) both;
+  }
+
+  .onboarding-rule-panel[data-visible="true"] li {
+    animation: onboarding-beat-reveal 300ms cubic-bezier(0, 0, 0.2, 1) both;
+    animation-delay: calc(var(--rule-index) * 70ms);
+  }
+}
+
+@keyframes onboarding-rule-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes onboarding-beat-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-enter,
+  .onboarding-enter[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .onboarding-rule-panel[data-visible="true"],
+  .onboarding-rule-panel[data-visible="true"] li {
+    animation: none;
+  }
 }

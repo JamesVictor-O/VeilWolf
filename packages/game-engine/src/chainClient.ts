@@ -71,3 +71,11 @@ export interface ChainClient {
   allEligibleVoted(gameId: string): Promise<boolean>;
   subscribe(gameId: string, listener: (state: GameState) => void): () => void;
 }
+
+/** Prototype-only controls exposed by the local mock client. */
+export interface SimulationClient extends ChainClient {
+  fillWithSimulatedPlayers(params: {
+    gameId: string;
+    actor: Address;
+  }): Promise<{ gameState: GameState }>;
+}

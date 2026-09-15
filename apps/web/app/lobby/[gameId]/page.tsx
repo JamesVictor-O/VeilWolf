@@ -14,6 +14,9 @@ export default function LobbyPage() {
   const router = useRouter();
   const { gameState, address, error } = useGameSync(gameId);
   const startGame = useGameStore((s) => s.startGame);
+  const fillWithSimulatedPlayers = useGameStore(
+    (s) => s.fillWithSimulatedPlayers,
+  );
   const loading = useGameStore((s) => s.loading);
   const navigated = useRef(false);
 
@@ -75,15 +78,35 @@ export default function LobbyPage() {
 
       <div className="mt-8 flex flex-col items-stretch gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
       {isHost ? (
-        <Button onClick={() => startGame()} disabled={!canStart} loading={loading} className="sm:ml-auto">
-          {canStart ? "Begin the first night" : `Waiting for ${MIN_PLAYERS - gameState.players.length} more`}
-        </Button>
+        <div className="flex w-full flex-col gap-3 sm:ml-auto sm:w-auto sm:flex-row">
+          {gameState.players.length < MIN_PLAYERS && (
+            <Button
+              variant="secondary"
+              onClick={() => fillWithSimulatedPlayers()}
+              loading={loading}
+            >
+              Fill seats with simulated players
+            </Button>
+          )}
+          <Button onClick={() => startGame()} disabled={!canStart} loading={loading}>
+            {canStart ? "Begin the first night" : `Waiting for ${MIN_PLAYERS - gameState.players.length} more`}
+          </Button>
+        </div>
       ) : (
         <p className="text-sm text-muted-foreground sm:ml-auto">Waiting for the host to begin.</p>
       )}
 
       {error && <p className="text-sm text-destructive" role="alert">{error} Try again.</p>}
       </div>
+      {isHost && gameState.players.some((player) => isSimulatedPlayer(player.address)) && (
+        <p className="mt-3 text-right text-xs text-muted-foreground">
+          Prototype mode: simulated players act and vote automatically.
+        </p>
+      )}
     </ScreenFrame>
   );
+}
+
+function isSimulatedPlayer(address: string): boolean {
+  return address.startsWith("simulated:");
 }

@@ -1,6 +1,6 @@
 import {
   mockChainClient,
-  type ChainClient,
+  type SimulationClient,
 } from "@veilwolf/game-engine";
 
 /**
@@ -10,4 +10,4 @@ import {
  * provider, private-state recovery, and transcript-privacy tests pass. Keeping
  * the choice here prevents generated SDK types from leaking into UI features.
  */
-export const chainClient: ChainClient = mockChainClient;
+export const chainClient: SimulationClient = mockChainClient;

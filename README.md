@@ -55,7 +55,9 @@ veilwolf/
 
 ## What's mocked
 
-There is no real blockchain, wallet, or ZK circuit in this build. Instead:
+The playable match still uses the local mock client, but the repository now
+contains a compiler-checked Compact privacy spike for night actions. The mock
+remains in place while the rest of the on-chain lifecycle is implemented.
 
 - **`packages/game-engine/src/stateMachine.ts`** is the entire game logic —
   pure, synchronous, I/O-free functions (`createGame`, `joinGame`,
@@ -71,8 +73,9 @@ There is no real blockchain, wallet, or ZK circuit in this build. Instead:
   calls behind an artificial ~250ms delay, and persistence is
   `localStorage` so two browser tabs on the same machine can play as two
   different players without a backend.
-- **Role assignment lives on the mock "server."** Because there's no real
-  ZK circuit yet, `mockChainClient` is trusted with every player's role and
+- **Role assignment lives on the mock "server."** The private-action spike
+  does not yet prove membership in an assigned role, so `mockChainClient` is
+  still trusted with every player's role and
   night-action targets in the clear (see the big comment at the top of that
   file). A real Midnight contract would never let a server see a player's
   role — it would only ever see commitments and proofs. This is the single
@@ -92,6 +95,11 @@ When it's time to wire in the real Midnight Compact TS SDK:
    `circuit` per `stateMachine.ts` function. It is *not* compiled and
    hasn't been validated against a real `compactc` — treat it as a spec
    to check against the current language docs, not working source.
+   **`packages/contracts/private-action.compact`** is working source: it
+   compiles with Compact compiler 0.34.0 / language 0.26, keeps the role and
+   target in a witness, stores a randomized commitment, and rejects reuse via
+   a round-scoped nullifier. Its simulator tests cover valid submission,
+   duplicate action, invalid role, empty target, and closed-night rejection.
 2. **Replace `mockChainClient.ts`.** Nothing else should need to change.
    `apps/web` and `packages/ui` only ever import the `ChainClient`
    interface and `useGameStore` (`apps/web/lib/store.ts`) — never
